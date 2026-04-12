@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Luxury Asset Curator V5 - Pro Edition</title>
+<title>AI Luxury Asset Curator V5.3 - Pro Edition</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
@@ -26,8 +26,6 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
 .badge-metal{background:linear-gradient(135deg,rgba(136,136,136,0.15),rgba(136,136,136,0.05));border:1px solid rgba(136,136,136,0.3);color:#aaaaaa}
 .conf-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
 .conf-high{background:#D4AF37;box-shadow:0 0 8px rgba(212,175,55,0.6)}.conf-med{background:#888888}.conf-low{background:#ef4444}
-.space-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:4px;font-size:10px;border:1px solid #333;background:#161616;color:#aaa;margin:3px;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;transition:all 0.2s;}
-.space-chip:hover{border-color:#D4AF37;color:#D4AF37;background:rgba(212,175,55,0.05)}
 .platform-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;transition:all .2s;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em}
 .step-dot{width:8px;height:8px;border-radius:50%;background:#333;transition:background .3s}
 .step-lbl{font-size:10px;color:#666;transition:color .3s;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
@@ -38,6 +36,7 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
 </head>
 <body class="min-h-screen p-4 md:p-6 flex flex-col items-center relative selection:bg-gold selection:text-black">
 
+<!-- MODAL CẮT XÉN ẢNH -->
 <div id="crop-modal" class="hidden fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-300">
   <div class="w-full max-w-4xl flex flex-col h-full max-h-[85vh] bg-panel border border-border overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="crop-box">
     <div class="flex items-center justify-between p-5 border-b border-border bg-panel">
@@ -59,6 +58,7 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
   </div>
 </div>
 
+<!-- Settings Modal -->
 <div id="settings-modal" class="hidden fixed inset-0 z-[90] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
   <div class="bg-panel border border-border w-full max-w-md p-8 rounded-xl transform scale-95 transition-transform duration-300 shadow-2xl" id="settings-box">
     <div class="flex items-center justify-between mb-6">
@@ -108,8 +108,8 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <button onclick="setMode('basic')" id="btn-mode-basic" class="relative z-10 w-[80px] text-[10px] font-bold text-white py-2 uppercase tracking-widest outline-none">Basic</button>
         <button onclick="setMode('lens')" id="btn-mode-lens" class="relative z-10 w-[80px] text-[10px] font-bold text-metal py-2 uppercase tracking-widest outline-none">Advanced</button>
     </div>
-    <button onclick="openSettings()" class="flex items-center justify-center w-10 h-10 bg-dark border border-border rounded-lg hover:border-gold text-metal hover:text-gold transition-all shadow-sm">
-      <i class="ph-fill ph-sliders-horizontal text-lg"></i>
+    <button onclick="openSettings()" class="flex items-center gap-2 bg-dark border border-border hover:border-gold px-4 h-10 rounded-lg text-xs font-bold text-metal hover:text-gold uppercase tracking-widest transition-all shadow-sm">
+      <i class="ph-fill ph-key text-lg"></i> API KEYS
     </button>
     <button onclick="resetAll()" class="flex items-center gap-2 bg-dark border border-border rounded-lg hover:border-danger/50 px-5 h-10 text-xs font-bold text-metal hover:text-danger uppercase tracking-widest transition-all shadow-sm">
       <i class="ph ph-trash"></i> Clear
@@ -118,13 +118,15 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
 </header>
 
 <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <!-- LEFT: ZONE TÌM KIẾM & TẢI ẢNH -->
   <div class="lg:col-span-5 flex flex-col gap-6">
+
     <div class="bg-panel border border-border p-1.5 rounded-lg flex gap-2 shadow-lg relative group">
       <div class="absolute -inset-0.5 bg-gradient-to-r from-gold/0 via-gold/10 to-gold/0 opacity-0 group-hover:opacity-100 transition duration-500 blur rounded-lg"></div>
       <div class="relative flex items-center w-full bg-dark border border-border rounded">
           <div class="px-4 text-gold"><i class="ph-bold ph-text-t"></i></div>
-          <input type="text" id="text-search-input" placeholder="Tìm kiếm bằng văn bản (VD: Minotti Osaka)..." class="flex-1 bg-transparent text-xs text-white outline-none py-4 placeholder-metal tracking-wider w-full" onkeypress="if(event.key==='Enter') startTextSearch()">
-          <button onclick="startTextSearch()" class="bg-gold text-black hover:bg-goldlight px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 border-l border-border whitespace-nowrap rounded-r">
+          <input type="text" id="text-search-input" placeholder="Tìm kiếm..." class="flex-1 bg-transparent text-xs text-white outline-none py-4 pr-4 placeholder-metal tracking-wider min-w-0 truncate" onkeypress="if(event.key==='Enter') startTextSearch()">
+          <button onclick="startTextSearch()" class="bg-gold text-black hover:bg-goldlight px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 border-l border-border whitespace-nowrap rounded-r shrink-0">
             <i class="ph-bold ph-magnifying-glass text-sm"></i> Tìm
           </button>
       </div>
@@ -148,7 +150,12 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <i class="ph-bold ph-aperture text-gold"></i> <span id="file-name-display">image.jpg</span>
       </div>
       <div class="relative h-full bg-dark flex items-center justify-center p-4">
-        <img id="preview-image" src="" alt="preview" class="max-w-full max-h-full object-contain">
+        <!-- Placeholder cho trường hợp không có ảnh hoặc ảnh lỗi -->
+        <div id="preview-placeholder" class="hidden flex-col items-center justify-center text-metal">
+            <i class="ph-light ph-image-broken text-5xl mb-2 opacity-30"></i>
+            <span class="text-[10px] uppercase tracking-widest font-bold opacity-50">Không tải được ảnh</span>
+        </div>
+        <img id="preview-image" src="" alt="preview" class="max-w-full max-h-full object-contain" onerror="handleImageError(this)">
         <div id="scan-line" class="scan-line"></div>
       </div>
     </div>
@@ -158,6 +165,29 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <h3 class="text-[10px] font-bold text-metal uppercase tracking-widest flex items-center gap-2"><i class="ph-fill ph-chart-polar text-gold"></i> Thẩm định hình khối</h3>
       </div>
       <div class="flex justify-center py-2"><canvas id="radarCanvas" width="300" height="260"></canvas></div>
+    </div>
+
+    <!-- KHU VỰC GỢI Ý SẢN PHẨM -->
+    <div id="suggestions-zone" class="hidden flex-col gap-6 mt-2">
+        <div id="suggestion-trigger-box" class="bg-panel border border-border rounded-xl p-8 text-center shadow-lg flex flex-col items-center justify-center">
+            <i class="ph-light ph-magic-wand text-4xl text-gold mb-3 opacity-50"></i>
+            <h3 class="text-xs font-bold text-white uppercase tracking-widest mb-2">Khám phá thêm sản phẩm</h3>
+            <p class="text-[10px] text-metal mb-6 max-w-sm leading-relaxed">Xem thêm 20 hình ảnh các sản phẩm cùng hãng và cùng loại.<br><span class="text-danger font-bold mt-1 inline-block">Lưu ý: Tính năng này sẽ tiêu tốn thêm 2 lượt tìm kiếm SerpApi.</span></p>
+            <button id="btn-load-suggest" class="px-6 py-3 bg-dark border border-gold/30 text-gold hover:bg-gold hover:text-black font-bold uppercase tracking-widest rounded-lg transition-all text-[10px] flex items-center gap-2">
+                Tải Ảnh Gợi Ý
+            </button>
+        </div>
+
+        <div id="suggestion-content" class="hidden flex-col gap-6">
+            <div class="bg-panel border border-border rounded-xl p-5 shadow-lg">
+                <h3 class="text-[10px] font-bold text-gold uppercase tracking-widest mb-4 flex items-center gap-2"><i class="ph-fill ph-buildings"></i> Sản phẩm cùng hãng</h3>
+                <div id="suggest-brand-list" class="flex gap-4 overflow-x-auto pb-2 snap-x scroll-smooth"></div>
+            </div>
+            <div class="bg-panel border border-border rounded-xl p-5 shadow-lg">
+                <h3 class="text-[10px] font-bold text-gold uppercase tracking-widest mb-4 flex items-center gap-2"><i class="ph-fill ph-magic-wand"></i> Sản phẩm cùng loại</h3>
+                <div id="suggest-type-list" class="flex gap-4 overflow-x-auto pb-2 snap-x scroll-smooth"></div>
+            </div>
+        </div>
     </div>
   </div>
 
@@ -219,10 +249,12 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
             <p id="res-brand" class="text-lg font-black text-white leading-tight mb-4 tracking-wide uppercase"></p>
             <p class="text-[9px] text-metal uppercase tracking-widest mb-2 font-bold">Tên Model</p>
             <div id="res-product-name" class="text-lg font-black uppercase tracking-wide"></div>
-            <p id="res-designer" class="text-[10px] text-metal mt-4 uppercase tracking-widest font-bold"></p>
-            <a id="res-exact-link" href="#" target="_blank" class="hidden mt-6 items-center gap-2 bg-gold text-black px-6 py-3 rounded-lg text-[10px] uppercase tracking-widest font-bold hover:bg-goldlight transition-all w-fit shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-              <i class="ph-bold ph-storefront text-sm"></i> <span>Đi Đến Cửa Hàng</span>
-            </a>
+            <p id="res-designer" class="text-[10px] text-metal mt-4 mb-6 uppercase tracking-widest font-bold"></p>
+            <div class="mt-2">
+                <a id="res-exact-link" href="#" target="_blank" class="hidden inline-flex items-center gap-2 bg-gold text-black px-6 py-3 rounded-lg text-[10px] uppercase tracking-widest font-bold hover:bg-goldlight transition-all shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+                  <i class="ph-bold ph-storefront text-sm"></i> <span>Đi Đến Cửa Hàng</span>
+                </a>
+            </div>
           </div>
           <div class="col-span-2 md:col-span-1 flex flex-col gap-6">
             <div><p class="text-[9px] text-metal uppercase tracking-widest mb-2 font-bold">Phong cách</p><span id="res-style" class="inline-block text-xs font-bold px-3 py-1.5 bg-panel border border-border rounded text-white uppercase tracking-wider"></span></div>
@@ -237,7 +269,7 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
             <div class="flex items-center w-full bg-[#050505] border border-border rounded-lg overflow-hidden mb-5 shadow-inner">
                  <div class="px-4 text-gold"><i class="ph-bold ph-text-t text-lg"></i></div>
                  <input type="text" id="main-keyword-text" readonly class="flex-1 bg-transparent text-white font-bold text-sm py-4 outline-none uppercase tracking-wider truncate w-full" value="">
-                 <button onclick="safeCopyText(document.getElementById('main-keyword-text').value, this)" class="px-6 py-4 bg-border text-metal hover:bg-gold hover:text-black font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border-l border-border shrink-0">
+                 <button onclick="safeCopyText(this.previousElementSibling.value, this)" class="px-6 py-4 bg-border text-metal hover:bg-gold hover:text-black font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border-l border-border shrink-0">
                     <i class="ph-bold ph-copy text-sm"></i> Copy
                  </button>
             </div>
@@ -271,14 +303,21 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
 </main>
 
 <script>
-// =====================================================================
-// CHÚ Ý DÀNH CHO CỘNG ĐỒNG SHARE CODE
-// Sử dụng model 1.5-flash để đảm bảo API Key phổ thông nào cũng chạy được.
-// =====================================================================
-const GEMINI_MODEL = "gemini-1.5-flash";
-
 function getEl(id) { return document.getElementById(id); }
 function toggleHide(id, hide) { const el = getEl(id); if(el) { if(hide) el.classList.add('hidden'); else el.classList.remove('hidden'); } }
+
+// FIX LỖI ẨN ẢNH: Reset hiển thị ảnh mỗi khi nạp ảnh mới
+function resetImagePreviewUI() {
+    const pImg = getEl('preview-image');
+    const pPlaceholder = getEl('preview-placeholder');
+    if (pImg) { pImg.classList.remove('hidden'); pImg.style.display = 'block'; }
+    if (pPlaceholder) pPlaceholder.classList.add('hidden');
+}
+
+function handleImageError(img) {
+    img.classList.add('hidden');
+    getEl('preview-placeholder').classList.remove('hidden');
+}
 
 window.safeCopyText = function(text, btn) {
     if(!text) return;
@@ -301,9 +340,7 @@ window.safeCopyText = function(text, btn) {
             btn.classList.remove('bg-success', 'border-success');
             btn.classList.add('text-metal', 'bg-border', 'hover:bg-gold');
         }, 1500);
-    } catch (err) {
-        console.error('Copy failed', err);
-    }
+    } catch (err) { console.error('Copy failed', err); }
     document.body.removeChild(textArea);
 };
 
@@ -316,7 +353,7 @@ function cancelSearch() {
     }
 }
 
-let currentMode = localStorage.getItem('search_mode') || 'basic';
+let currentMode = localStorage.getItem('search_mode') || 'lens';
 function setMode(mode) {
     currentMode = mode; localStorage.setItem('search_mode', mode);
     const bg = getEl('mode-bg'), btnB = getEl('btn-mode-basic'), btnL = getEl('btn-mode-lens');
@@ -336,15 +373,9 @@ async function fetchSerpApi(targetUrl, signal) {
             const data = await directRes.json();
             if(!data.error) return data;
         }
-    } catch(e) {
-        if (e.name === 'AbortError') throw e;
-    }
+    } catch(e) { if (e.name === 'AbortError') throw e; }
 
-    const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
-    ];
+    const proxies = [`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`, `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`];
     let lastErr = null;
     for (let p of proxies) {
         try {
@@ -353,28 +384,24 @@ async function fetchSerpApi(targetUrl, signal) {
             const data = await r.json();
             if (data.error) throw new Error(data.error); 
             return data;
-        } catch (e) {
-            if (e.name === 'AbortError') throw e;
-            lastErr = e;
-        }
+        } catch (e) { if (e.name === 'AbortError') throw e; lastErr = e; }
     }
     throw new Error(lastErr?.message || "Cầu nối mạng bị quá tải. Vui lòng thử lại sau.");
 }
 
-const jsonSchema = `{"product_type": "BẮT BUỘC GHI: Sofa, Armchair, Dining Chair, Bed, Table...", "main_brand": "Tên thương hiệu. Nếu không rõ, ghi 'Chưa xác định'", "product_name": "Tên Model. Nếu không rõ, ghi 'Chưa xác định'", "homepage_link": "Link trang web gốc của hãng (ví dụ: https://www.fendicasa.com) hoặc NONE", "designer": "Tên tác giả hoặc 'Chưa xác định'", "main_search_keyword": "TỪ KHÓA CHÍNH (TỐI ĐA 1 ĐẾN 4 TỪ). Nếu có Hãng+Model thì ghép lại. Nếu không có, CHỈ GHI loại đồ + chất liệu (vd: tiger print sofa). CẤM VIẾT CÂU DÀI.", "related_keywords": ["keyword 1", "keyword 2", "keyword 3"], "style": "...", "is_luxury": true, "score_total": 8.5, "form_score": 8, "proportion_score": 8, "color_score": 8, "detail_score": 8, "material_score": 8, "luxury_index": 8, "match_status": "GHI ĐÚNG 1 TRONG 2 CHỮ: 'EXACT' (tự tin 100%), hoặc 'GUESS' (suy đoán)", "aesthetic_analysis": "Đánh giá chi tiết thẩm mỹ và vật liệu (3-4 câu)"}`;
+const jsonSchema = `{"product_type": "BẮT BUỘC GHI: Sofa, Armchair, Dining Chair, Bed, Table...", "main_brand": "Tên thương hiệu. Nếu không rõ, ghi 'Chưa xác định'", "product_name": "Tên Model. Nếu không rõ, ghi 'Chưa xác định'", "homepage_link": "Link trang web gốc của hãng (ví dụ: https://www.fendicasa.com) hoặc NONE", "designer": "Tên tác giả hoặc 'Chưa xác định'", "main_search_keyword": "TỪ KHÓA CHÍNH (TỐI ĐA 1 ĐẾN 4 TỪ). Nếu có Hãng+Model thì ghép lại. Nếu không có, CHỈ GHI loại đồ + chất liệu (vd: tiger print sofa). CẤM VIẾT CÂU DÀI.", "related_keywords": ["keyword 1", "keyword 2", "keyword 3"], "style": "...", "is_luxury": true, "score_total": 8.5, "form_score": 8, "proportion_score": 8, "color_score": 8, "detail_score": 8, "material_score": 8, "luxury_index": 8, "match_status": "GHI ĐÚNG 1 TRONG 2 CHỮ: 'EXACT' (tự tin 100%), hoặc 'GUESS' (suy đoán)", "aesthetic_analysis": "Góc nhìn chuyên gia cực kỳ khắt khe: Soi lỗi, chê bai những điểm chưa được về hình khối/vật liệu. Đừng khen ngợi thảo mai trừ khi nó thực sự hoàn hảo (3-4 câu)"}`;
 
 function isApiKeyReady() {
     const geminiKey = localStorage.getItem('gemini_key');
     const imgKey = localStorage.getItem('imgbb_key');
     const serpKey = localStorage.getItem('serp_key');
-    
-    if (!geminiKey) {
-        alert("Lỗi: Yêu cầu nhập Gemini API Key để AI hoạt động!\nVui lòng nhấp vào biểu tượng bánh răng để cài đặt.");
+    if (!geminiKey && window.location.hostname !== 'localhost') {
+        alert("Lỗi: Yêu cầu nhập Gemini API Key để AI hoạt động!\nVui lòng nhấp vào nút API KEYS để cài đặt.");
         openSettings();
         return false;
     }
     if (currentMode === 'lens' && (!imgKey || !serpKey)) {
-        alert("Lỗi: Chế độ Advanced yêu cầu nhập API Key của ImgBB và SerpApi!\nVui lòng nhấp vào biểu tượng bánh răng để cài đặt.");
+        alert("Lỗi: Chế độ Advanced yêu cầu nhập API Key của ImgBB và SerpApi!\nVui lòng nhấp vào nút API KEYS để cài đặt.");
         openSettings();
         return false;
     }
@@ -384,9 +411,12 @@ function isApiKeyReady() {
 async function startTextSearch() {
     const inputEl = getEl('text-search-input');
     if(!inputEl) return;
-    const query = inputEl.value.trim();
+    let query = inputEl.value.trim();
+    if (!query && inputEl.placeholder && inputEl.placeholder !== "Tìm kiếm...") {
+        query = inputEl.placeholder.trim();
+        if (query) inputEl.value = query; 
+    }
     if(!query) return;
-
     if (!isApiKeyReady()) return;
 
     cancelSearch(); searchAbortController = new AbortController(); const signal = searchAbortController.signal;
@@ -394,22 +424,24 @@ async function startTextSearch() {
 
     toggleHide('upload-zone', true); toggleHide('preview-zone', false);
     toggleHide('empty-state', true); toggleHide('ready-state', true);
-    toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true);
+    toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true);
     
+    resetImagePreviewUI();
     const sl = getEl('scan-line'); if(sl) sl.style.display = 'block';
     [1,2,3].forEach(stepReset);
 
     try {
         const gemKey = localStorage.getItem('gemini_key') || "";
-        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${gemKey}`;
+        const modelToUse = gemKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
+        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${gemKey}`;
         const lt = getEl('loading-text');
         
         stepActive(1);
         if (lt) lt.innerText = 'Đang tìm kiếm hình ảnh...';
         
         if (!serpKey && currentMode === 'basic') {
-            // Chế độ Basic + Tìm chữ không cần SerpApi, chỉ đoán chay
-            getEl('preview-image').src = "";
+            getEl('preview-image').classList.add('hidden');
+            getEl('preview-placeholder').classList.remove('hidden');
             getEl('file-name-display').innerText = `[TEXT] ${query}`;
             stepDone(1); stepDone(2); 
         } else {
@@ -423,17 +455,10 @@ async function startTextSearch() {
 
         stepActive(3);
         if (lt) lt.innerText = 'AI đang phân tích...';
-        
-        const P = `Người dùng đang tìm kiếm món đồ nội thất bằng từ khóa: "${query}".
-        NHIỆM VỤ: 
-        1. Dựa vào kiến thức nội thất của bạn, định danh chi tiết sản phẩm này.
-        2. BẮT BUỘC ĐIỀN match_status: Nếu từ khóa là một mô tả chung chung (vd: "sofa màu đen"), hãy ghi match_status là "GUESS". Nếu từ khóa là tên hãng/model cụ thể, ghi match_status là "EXACT".
-        TRẢ JSON: ${jsonSchema}`;
-        
+        const P = `Người dùng đang tìm kiếm món đồ nội thất bằng từ khóa: "${query}". NHIỆM VỤ: 1. Định danh chi tiết sản phẩm này. 2. BẮT BUỘC ĐIỀN match_status: 'GUESS' hoặc 'EXACT'. 3. NHẬP VAI KHẮT KHE: Bạn là một nhà phê bình thiết kế cực kỳ khó tính. Hãy hạ tiêu chuẩn điểm xuống, đồ nội thất thông thường chỉ xứng đáng 5-6 điểm. Dành mức điểm 8-10 cho những kiệt tác thực sự. Nhận xét phải thẳng thắn, soi xét khuyết điểm. TRẢ JSON: ${jsonSchema}`;
         const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P}]}]}), signal });
         let d3 = parseJSON(await r3.json()); d3._mode = 'text';
         stepDone(3);
-        
         render(d3);
     } catch(err) {
         if(err.name === 'AbortError') { resetSystem(); }
@@ -443,23 +468,15 @@ async function startTextSearch() {
 
 function parseJSON(r) { 
     if(r.error) throw new Error("Lỗi Gemini API: " + (r.error.message || "Key không hợp lệ."));
-    if(!r.candidates || !r.candidates[0]) {
-        if (r.promptFeedback?.blockReason) throw new Error("Bị chặn bởi bộ lọc an toàn: " + r.promptFeedback.blockReason);
-        throw new Error("Lỗi xác thực. Vui lòng kiểm tra lại API Key Gemini của bạn trong Cài đặt.");
-    }
+    if(!r.candidates || !r.candidates[0]) throw new Error("Lỗi xác thực. Vui lòng kiểm tra lại API Key Gemini.");
     const cand = r.candidates[0];
-    if(!cand.content || !cand.content.parts || !cand.content.parts[0]) throw new Error("Dữ liệu AI rỗng.");
     const t = cand.content.parts.map(p=>p.text).join(''); 
     const s = t.indexOf('{'), e = t.lastIndexOf('}');
     if(s === -1 || e === -1) throw new Error("Dữ liệu AI không đúng định dạng JSON.");
-    try { return JSON.parse(t.slice(s, e+1).replace(/[\x00-\x1F\x7F]/g,' ').replace(/,(\s*[}\]])/g,'$1')); } 
-    catch(err) { throw new Error("Lỗi phân tích JSON: " + err.message); }
+    return JSON.parse(t.slice(s, e+1).replace(/[\x00-\x1F\x7F]/g,' ').replace(/,(\s*[}\]])/g,'$1'));
 }
 
-let cropper = null;
-let originalImageB64 = "";
-let currentImageB64 = "";
-let currentFileName = "image.jpg";
+let cropper = null, originalImageB64 = "", currentImageB64 = "", currentFileName = "image.jpg";
 
 function openCropModal(b64) {
   const modal = getEl('crop-modal'), imgEl = getEl('image-to-crop');
@@ -472,15 +489,12 @@ function openCropModal(b64) {
       cropper = new Cropper(imgEl, { viewMode: 1, autoCropArea: 0.9, background: false });
   }, 50);
 }
+
 function closeCropModal() {
   const m = getEl('crop-modal'); if(m) m.classList.add('opacity-0'); getEl('crop-box')?.classList.add('scale-95');
-  setTimeout(()=> { 
-      if(m) m.classList.add('hidden'); cropper?.destroy(); cropper = null; 
-      if (currentImageB64) { 
-          if (getEl('results-state').classList.contains('hidden')) { showReadyState(); } 
-      } else { resetSystem(); }
-  }, 300);
+  setTimeout(()=> { if(m) m.classList.add('hidden'); cropper?.destroy(); cropper = null; if (currentImageB64) { if (getEl('results-state').classList.contains('hidden')) { showReadyState(); } } else { resetSystem(); } }, 300);
 }
+
 function confirmCrop(doCrop) {
     let finalB64 = originalImageB64;
     if(doCrop && cropper) {
@@ -488,34 +502,16 @@ function confirmCrop(doCrop) {
         if(canvas) finalB64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
     }
     const m = getEl('crop-modal'); if(m) m.classList.add('opacity-0'); getEl('crop-box')?.classList.add('scale-95');
-    setTimeout(()=> { 
-        if(m) m.classList.add('hidden'); cropper?.destroy(); cropper = null; 
-        currentImageB64 = finalB64;
-        analyseImage(finalB64); 
-    }, 300);
+    setTimeout(()=> { if(m) m.classList.add('hidden'); cropper?.destroy(); cropper = null; currentImageB64 = finalB64; analyseImage(finalB64); }, 300);
 }
 
 const uZone = document.getElementById('upload-zone');
 uZone.addEventListener('click', e => { getEl('file-upload')?.click(); });
 document.getElementById('file-upload').addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
-
 uZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); uZone.classList.add('border-gold'); });
 uZone.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); uZone.classList.remove('border-gold'); });
-uZone.addEventListener('drop', e => {
-    e.preventDefault(); e.stopPropagation(); uZone.classList.remove('border-gold');
-    if(e.dataTransfer.files && e.dataTransfer.files[0]) { handleFile(e.dataTransfer.files[0]); }
-});
-
-document.addEventListener('paste', e => {
-  if(['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
-  const cb = e.clipboardData; if(!cb) return;
-  if(cb.files?.[0]?.type.startsWith('image/')) { handleFile(cb.files[0]); return; }
-  for(let i=0; i<cb.items.length; i++) {
-    if(cb.items[i].type.indexOf('image')!==-1) {
-        const b = cb.items[i].getAsFile(); if(b) handleFile(new File([b],'paste-'+Date.now()+'.png',{type:b.type})); return;
-    }
-  }
-});
+uZone.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); uZone.classList.remove('border-gold'); if(e.dataTransfer.files && e.dataTransfer.files[0]) { handleFile(e.dataTransfer.files[0]); } });
+document.addEventListener('paste', e => { if(['INPUT','TEXTAREA'].includes(e.target.tagName)) return; const cb = e.clipboardData; if(!cb) return; if(cb.files?.[0]?.type.startsWith('image/')) { handleFile(cb.files[0]); return; } for(let i=0; i<cb.items.length; i++) { if(cb.items[i].type.indexOf('image')!==-1) { const b = cb.items[i].getAsFile(); if(b) handleFile(new File([b],'paste-'+Date.now()+'.png',{type:b.type})); return; } } });
 
 function handleFile(file){
   if(!file.type.startsWith('image/')) return;
@@ -542,77 +538,51 @@ function stepActive(n){ getEl(`s${n}-dot`)?.style.setProperty('background', '#D4
 function stepDone(n){ getEl(`s${n}-dot`)?.style.setProperty('background', '#10b981'); getEl(`s${n}-lbl`)?.style.setProperty('color', '#10b981'); }
 function stepReset(n){ getEl(`s${n}-dot`)?.style.setProperty('background', '#333'); getEl(`s${n}-lbl`)?.style.setProperty('color', '#666'); }
 
-function startAnalysis() { 
-    if (!isApiKeyReady()) return;
-    if (currentImageB64) analyseImage(currentImageB64); 
-}
+function startAnalysis() { if (!isApiKeyReady()) return; if (currentImageB64) analyseImage(currentImageB64); }
 
 async function analyseImage(b64){
   cancelSearch(); searchAbortController = new AbortController(); const signal = searchAbortController.signal;
-  const imgKey = localStorage.getItem('imgbb_key');
-  const serpKey = localStorage.getItem('serp_key');
-
+  const imgKey = localStorage.getItem('imgbb_key'), serpKey = localStorage.getItem('serp_key');
   toggleHide('upload-zone', true); toggleHide('preview-zone', false);
   toggleHide('empty-state', true); toggleHide('ready-state', true);
-  toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true);
-  
+  toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true);
+  resetImagePreviewUI();
   const sl = getEl('scan-line'); if(sl) sl.style.display = 'block';
   const pImg = getEl('preview-image'); if(pImg) pImg.src = "data:image/jpeg;base64," + b64;
   [1,2,3].forEach(stepReset);
-
   try {
     const gemKey = localStorage.getItem('gemini_key') || "";
-    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${gemKey}`;
+    const modelToUse = gemKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
+    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${gemKey}`;
     let d3 = null;
-
     if (currentMode === 'lens') {
-        const lt = getEl('loading-text');
-        
-        stepActive(1);
-        if (lt) lt.innerText = 'Đang trích xuất hình ảnh...';
+        const lt = getEl('loading-text'); stepActive(1); if (lt) lt.innerText = 'Đang trích xuất hình ảnh...';
         const body = new URLSearchParams(); body.append('image', b64);
         const r1 = await fetch(`https://api.imgbb.com/1/upload?key=${imgKey}`, { method: 'POST', body, signal });
-        if(!r1.ok) throw new Error("Lỗi Upload ảnh. Vui lòng kiểm tra lại Key ImgBB.");
-        const d1 = await r1.json(); const imgUrl = d1.data.url;
-        stepDone(1);
-
-        stepActive(2);
-        if (lt) lt.innerText = 'Google Lens running...';
+        if(!r1.ok) throw new Error("Lỗi Upload ảnh. Kiểm tra Key ImgBB.");
+        const d1 = await r1.json(); const imgUrl = d1.data.url; stepDone(1);
+        stepActive(2); if (lt) lt.innerText = 'Google Lens running...';
         const serpUrl = `https://serpapi.com/search.json?engine=google_lens&url=${encodeURIComponent(imgUrl)}&api_key=${serpKey}`;
-        
         const data = await fetchSerpApi(serpUrl, signal);
-        const lensMatches = data.visual_matches?.slice(0, 15).map(m => `- ${m.title} | Link: ${m.link}`).join('\n') || "Không có";
-        stepDone(2);
-
-        stepActive(3);
-        if (lt) lt.innerText = 'AI đang thẩm định...';
-        const P3 = `Đọc dữ liệu Google Lens: """${lensMatches}""". 
-NHIỆM VỤ: 1. ĐỊNH DANH (CẤM BỊA ĐẶT): Chỉ trích xuất Tên Hãng và Model nếu Lens có nhắc đến. 
-2. XÁC NHẬN ĐỘ TIN CẬY (match_status): Nếu Lens tìm đúng sản phẩm và bạn tự tin 100%, ghi EXACT. Nếu phải đoán hình dáng, ghi GUESS.
-3. LINK: Chỉ bóc Domain gốc của hãng để làm homepage_link.
-Trả JSON: ${jsonSchema}`;
+        const lensMatches = data.visual_matches?.slice(0, 15).map(m => `- ${m.title} | Link: ${m.link}`).join('\n') || "Không có"; stepDone(2);
+        stepActive(3); if (lt) lt.innerText = 'AI đang thẩm định...';
+        const P3 = `Đọc dữ liệu Google Lens: """${lensMatches}""". NHIỆM VỤ: 1. ĐỊNH DANH: Trích xuất Tên Hãng và Model. 2. XÁC NHẬN: EXACT hoặc GUESS. 3. NHẬP VAI KHẮT KHE: Đánh giá tác phẩm với con mắt cực kỳ khó tính, chấm điểm thấp tay (trung bình 5-6), nhận xét soi mói khuyết điểm thiết kế. Trả JSON: ${jsonSchema}`;
         const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P3},{inlineData:{mimeType:'image/jpeg',data:b64}}]}]}), signal });
-        d3 = parseJSON(await r3.json()); d3._mode = 'lens';
-        stepDone(3);
+        d3 = parseJSON(await r3.json()); d3._mode = 'lens'; stepDone(3);
     } else {
-        stepActive(1); stepActive(2); stepActive(3);
-        const lt = getEl('loading-text'); if (lt) lt.innerText = 'AI visual analysis...';
-        const P_Basic = `Chế độ cơ bản. CẤM BỊA TÊN. Đặt main_brand, product_name, designer là 'Chưa xác định'. Đặt match_status="GUESS". Trả JSON: ${jsonSchema}`;
+        stepActive(1); stepActive(2); stepActive(3); const lt = getEl('loading-text'); if (lt) lt.innerText = 'AI visual analysis...';
+        const P_Basic = `Chế độ cơ bản. CẤM BỊA TÊN. Đặt main_brand, product_name là 'Chưa xác định'. Đặt match_status="GUESS". NHẬP VAI KHẮT KHE: Điểm trung bình 5-6. Trả JSON: ${jsonSchema}`;
         const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P_Basic},{inlineData:{mimeType:'image/jpeg',data:b64}}]}]}), signal });
-        d3 = parseJSON(await r3.json()); d3._mode = 'guess';
-        stepDone(1); stepDone(2); stepDone(3);
+        d3 = parseJSON(await r3.json()); d3._mode = 'guess'; stepDone(1); stepDone(2); stepDone(3);
     }
     render(d3);
-  } catch(err) {
-    if(err.name === 'AbortError') { resetSystem(); }
-    else { const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; }
-  }
+  } catch(err) { if(err.name === 'AbortError') { resetSystem(); } else { const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; } }
 }
 
 function showReadyState() {
   toggleHide('upload-zone', true); toggleHide('preview-zone', false);
-  toggleHide('empty-state', true); toggleHide('loading-state', true);
-  toggleHide('ready-state', false); 
+  toggleHide('empty-state', true); toggleHide('loading-state', true); toggleHide('ready-state', false); 
+  resetImagePreviewUI();
   const pImg = getEl('preview-image'); if (pImg) pImg.src = "data:image/jpeg;base64," + currentImageB64;
   const fn = getEl('file-name-display'); if (fn) fn.innerText = currentFileName;
 }
@@ -621,103 +591,73 @@ function render(d){
   toggleHide('loading-state', true); toggleHide('results-state', false);
   const sl = getEl('scan-line'); if (sl) sl.style.display='none'; 
   const pImg = getEl('preview-image'); if (pImg) pImg.classList.remove('opacity-75');
-  
   const disclaimerEl = getEl('ai-disclaimer');
   if (disclaimerEl) {
-      if (d.match_status === 'EXACT') {
-          disclaimerEl.className = "mb-6 p-4 border border-success/30 bg-success/10 text-success text-[11px] rounded-lg flex items-center gap-3 uppercase tracking-widest font-bold shadow-lg shadow-success/5";
-          disclaimerEl.innerHTML = '<i class="ph-fill ph-shield-check text-2xl"></i> Đã xác nhận chính xác thông tin';
-      } else {
-          disclaimerEl.className = "mb-6 p-4 border border-gold/30 bg-gold/10 text-gold text-[10px] rounded-lg flex items-start gap-3 tracking-widest leading-relaxed shadow-lg shadow-gold/5";
-          disclaimerEl.innerHTML = '<i class="ph-fill ph-warning-circle text-2xl mt-0.5"></i> <span><b class="uppercase text-white">Lưu ý:</b> Thông tin do A.I cung cấp có thể không chính xác 100%. Bạn cần đối chiếu lại với nhà sản xuất hoặc dùng công cụ từ khóa bên dưới để tự kiểm tra thêm.</span>';
-      }
+      if (d.match_status === 'EXACT') { disclaimerEl.className = "mb-6 p-4 border border-success/30 bg-success/10 text-success text-[11px] rounded-lg flex items-center gap-3 uppercase tracking-widest font-bold shadow-lg shadow-success/5"; disclaimerEl.innerHTML = '<i class="ph-fill ph-shield-check text-2xl"></i> Đã xác nhận chính xác thông tin'; }
+      else { disclaimerEl.className = "mb-6 p-4 border border-gold/30 bg-gold/10 text-gold text-[10px] rounded-lg flex items-start gap-3 tracking-widest leading-relaxed shadow-lg shadow-gold/5"; disclaimerEl.innerHTML = '<i class="ph-fill ph-warning-circle text-2xl mt-0.5"></i> <span><b class="uppercase text-white">Lưu ý:</b> Thông tin do A.I cung cấp có thể không chính xác 100%.</span>'; }
   }
-
   const isU_Brand = !d.main_brand || d.main_brand === 'UNKNOWN' || d.main_brand.toLowerCase() === 'chưa xác định';
   const isU_Name = !d.product_name || d.product_name === 'UNKNOWN' || d.product_name.toLowerCase() === 'chưa xác định';
-
-  const pt = getEl('res-product-type'); if(pt) pt.innerText = d.product_type || "SẢN PHẨM NỘI THẤT";
-  
-  const rb = getEl('res-brand');
-  if (rb) rb.innerHTML = isU_Brand ? `<span class="text-metal font-light text-sm italic">Chưa xác định hãng</span>` : d.main_brand;
-  
-  const pName = getEl('res-product-name');
-  if (pName) {
-      pName.innerText = isU_Name ? "CHƯA XÁC ĐỊNH MODEL" : d.product_name;
-      pName.className = isU_Name ? "text-sm text-metal italic tracking-wider uppercase" : "text-xl text-white font-black uppercase tracking-wide";
-  }
-
-  const des = d.designer&&!['UNKNOWN','NONE','Chưa xác định'].includes(d.designer) ? d.designer : '';
-  const desEl = getEl('res-designer'); if(desEl) desEl.innerText = des ? 'Thiết kế: ' + des : '';
-  
+  getEl('res-product-type').innerText = d.product_type || "SẢN PHẨM NỘI THẤT";
+  getEl('res-brand').innerHTML = isU_Brand ? `<span class="text-metal font-light text-sm italic">Chưa xác định hãng</span>` : d.main_brand;
+  const pName = getEl('res-product-name'); pName.innerText = isU_Name ? "CHƯA XÁC ĐỊNH MODEL" : d.product_name; pName.className = isU_Name ? "text-sm text-metal italic tracking-wider uppercase" : "text-xl text-white font-black uppercase tracking-wide";
+  getEl('res-designer').innerText = d.designer&&!['UNKNOWN','NONE','Chưa xác định'].includes(d.designer) ? 'Thiết kế: ' + d.designer : '';
   const exactL = getEl('res-exact-link');
-  if(exactL) {
-      if(!isU_Brand && d.homepage_link && d.homepage_link !== 'NONE' && d.homepage_link.startsWith('http')) { 
-          try { exactL.href = new URL(d.homepage_link).origin; } catch(e) { exactL.href = d.homepage_link; }
-          toggleHide('res-exact-link', false); 
-      } else { toggleHide('res-exact-link', true); }
-  }
-
-  const rs = getEl('res-style'); if (rs) rs.innerText = d.style || '—';
-  const lb = getEl('res-luxury-badge');
-  if (lb) {
-      lb.className = `inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 border rounded ${d.is_luxury ? 'badge-gold' : 'badge-metal'}`;
-      lb.innerHTML = d.is_luxury ? '<i class="ph-fill ph-crown"></i> LUXURY' : '<i class="ph ph-x-circle"></i> BASIC';
-  }
-
-  const rScore = getEl('res-score'); if (rScore) rScore.innerText = d.score_total; 
-  
-  const rAes = getEl('res-aesthetic'); 
-  if (rAes) rAes.innerText = d.aesthetic_analysis || "Hệ thống đang cập nhật phân tích thẩm mỹ cho sản phẩm này.";
-
+  if(exactL) { if(!isU_Brand && d.homepage_link && d.homepage_link !== 'NONE') { try { exactL.href = new URL(d.homepage_link).origin; } catch(e) { exactL.href = d.homepage_link; } toggleHide('res-exact-link', false); } else toggleHide('res-exact-link', true); }
+  getEl('res-style').innerText = d.style || '—';
+  const lb = getEl('res-luxury-badge'); lb.className = `inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 border rounded ${d.is_luxury ? 'badge-gold' : 'badge-metal'}`; lb.innerHTML = d.is_luxury ? '<i class="ph-fill ph-crown"></i> LUXURY' : '<i class="ph ph-x-circle"></i> BASIC';
+  getEl('res-score').innerText = d.score_total; getEl('res-aesthetic').innerText = d.aesthetic_analysis || "Đang cập nhật phân tích...";
   const metrics = [{label:'Hình khối',val:d.form_score,color:'#D4AF37'}, {label:'Tỉ lệ',val:d.proportion_score,color:'#F3E5AB'}, {label:'Màu sắc',val:d.color_score,color:'#888888'}, {label:'Chi tiết',val:d.detail_score,color:'#aaaaaa'}, {label:'Vật liệu',val:d.material_score,color:'#D4AF37'}, {label:'Luxury',val:d.luxury_index,color:'#F3E5AB'}];
-  const subs = getEl('sub-scores'); 
-  if (subs) {
-      subs.innerHTML = '';
-      metrics.forEach(m => { subs.innerHTML += `<div class="flex items-center gap-4 text-[9px] uppercase tracking-widest"><span class="w-16 text-metal font-bold">${m.label}</span><div class="flex-1 h-1 bg-border overflow-hidden"><div class="h-full" style="width:${(m.val||0)*10}%;background:${m.color}"></div></div><span class="w-4 text-right font-black text-white">${m.val||0}</span></div>`; });
-  }
-
-  toggleHide('search-toolkit', false);
-  const mainKwInput = getEl('main-keyword-text');
-  if (mainKwInput) mainKwInput.value = d.main_search_keyword || (d.product_type + " 3d model");
-
-  const plats = getEl('platform-links'); 
-  if (plats) {
-      plats.innerHTML = '';
-      const searchKw = encodeURIComponent(d.main_search_keyword || d.product_type);
-      [{name:'Google', color:'#D4AF37', icon:'google-logo', url:`https://www.google.com/search?tbm=isch&q=${searchKw}`}, {name:'3dsky', color:'#D4AF37', icon:'cube', url:`https://3dsky.org/search?query=${searchKw}`},{name:'Pinterest',color:'#D4AF37', icon:'pinterest-logo', url:`https://www.pinterest.com/search/pins/?q=${searchKw}`}].forEach(p => {
-          const a = document.createElement('a'); a.href = p.url; a.target='_blank'; a.className='platform-btn hover:bg-gold hover:text-black hover:border-gold'; a.style=`color:${p.color};border-color:rgba(212,175,55,0.3);background:rgba(212,175,55,0.05)`; a.innerHTML=`<i class="ph-bold ph-${p.icon} text-sm"></i> ${p.name}`; plats.appendChild(a);
-      });
-  }
-  
-  if(d.related_keywords?.length){ 
-      toggleHide('related-keywords-box', false); 
-      const rl = getEl('related-keywords-list'); 
-      if(rl) { 
-          rl.innerHTML = ''; 
-          d.related_keywords.forEach(k => { 
-              const safeK = k.replace(/'/g,"\\'");
-              rl.innerHTML += `<div class="flex items-center bg-dark border border-border pl-3 rounded overflow-hidden"><span class="text-[10px] text-white font-mono mr-2 uppercase tracking-wider">${k}</span><button onclick="safeCopyText('${safeK}',this)" class="px-4 py-2 bg-border text-metal hover:bg-gold hover:text-black transition-all text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 border-l border-border"><i class="ph-bold ph-copy"></i> Copy</button></div>`; 
-          }); 
-      } 
-  } else toggleHide('related-keywords-box', true);
-  
-  const cb=getEl('confidence-badge');
-  if(cb) {
-      if(d._mode === 'lens') {
-          cb.className='text-[9px] px-3 py-1 rounded border border-gold/30 bg-gold/10 text-gold uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-high"></span>Advanced';
-      } else if (d._mode === 'text') {
-          cb.className='text-[9px] px-3 py-1 rounded border border-metal/30 bg-metal/10 text-metal uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-med"></span>Text Search';
-      } else {
-          cb.className='text-[9px] px-3 py-1 rounded border border-metal/30 bg-metal/10 text-metal uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-med"></span>Basic Mode';
-      }
-  }
-
+  const subs = getEl('sub-scores'); subs.innerHTML = '';
+  metrics.forEach(m => { subs.innerHTML += `<div class="flex items-center gap-4 text-[9px] uppercase tracking-widest"><span class="w-16 text-metal font-bold">${m.label}</span><div class="flex-1 h-1 bg-border overflow-hidden"><div class="h-full" style="width:${(m.val||0)*10}%;background:${m.color}"></div></div><span class="w-4 text-right font-black text-white">${m.val||0}</span></div>`; });
+  toggleHide('search-toolkit', false); getEl('main-keyword-text').value = d.main_search_keyword || (d.product_type + " 3d model");
+  const plats = getEl('platform-links'); plats.innerHTML = '';
+  const searchKw = encodeURIComponent(d.main_search_keyword || d.product_type);
+  [{name:'Google', color:'#D4AF37', icon:'google-logo', url:`https://www.google.com/search?tbm=isch&q=${searchKw}`}, {name:'3dsky', color:'#D4AF37', icon:'cube', url:`https://3dsky.org/search?query=${searchKw}`},{name:'Pinterest',color:'#D4AF37', icon:'pinterest-logo', url:`https://www.pinterest.com/search/pins/?q=${searchKw}`}].forEach(p => {
+      const a = document.createElement('a'); a.href = p.url; a.target='_blank'; a.className='platform-btn hover:bg-gold hover:text-black hover:border-gold'; a.style=`color:${p.color};border-color:rgba(212,175,55,0.3);background:rgba(212,175,55,0.05)`; a.innerHTML=`<i class="ph-bold ph-${p.icon} text-sm"></i> ${p.name}`; plats.appendChild(a);
+  });
+  if(d.related_keywords?.length){ toggleHide('related-keywords-box', false); const rl = getEl('related-keywords-list'); rl.innerHTML = ''; d.related_keywords.forEach(k => { rl.innerHTML += `<div class="flex items-center bg-dark border border-border pl-3 rounded overflow-hidden"><span class="text-[10px] text-white font-mono mr-2 uppercase tracking-wider">${k}</span><button onclick="safeCopyText(this.previousElementSibling.innerText, this)" class="px-4 py-2 bg-border text-metal hover:bg-gold hover:text-black transition-all text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 border-l border-border"><i class="ph-bold ph-copy"></i> Copy</button></div>`; }); } else toggleHide('related-keywords-box', true);
+  const cb=getEl('confidence-badge'); if(cb) { if(d._mode === 'lens') { cb.className='text-[9px] px-3 py-1 rounded border border-gold/30 bg-gold/10 text-gold uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-high"></span>Advanced'; } else { cb.className='text-[9px] px-3 py-1 rounded border border-metal/30 bg-metal/10 text-metal uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-med"></span>Mode: ' + d._mode; } }
   toggleHide('radar-card', false);
-  setTimeout(() => {
-      drawRadar(metrics);
-      toggleAcc('acc-aesthetic','icon-aesthetic');
-  }, 150);
+  setTimeout(() => { drawRadar(metrics); toggleAcc('acc-aesthetic','icon-aesthetic'); toggleHide('suggestions-zone', false); toggleHide('suggestion-trigger-box', false); toggleHide('suggestion-content', true); const btnSuggest = getEl('btn-load-suggest'); if (btnSuggest) { btnSuggest.onclick = () => { toggleHide('suggestion-trigger-box', true); toggleHide('suggestion-content', false); fetchSuggestions(d.main_brand, d.product_type); }; } }, 150);
+}
+
+async function fetchSuggestions(brand, type) {
+    const serpKey = localStorage.getItem('serp_key'); if(!serpKey) return; 
+    const brandList = getEl('suggest-brand-list'), typeList = getEl('suggest-type-list');
+    brandList.innerHTML = typeList.innerHTML = '<div class="w-full h-20 flex items-center justify-center"><div class="w-5 h-5 border-2 border-border border-t-gold rounded-full animate-spin"></div></div>';
+    toggleHide('suggestions-zone', false);
+    try {
+        let q1 = brand && brand !== 'UNKNOWN' && brand !== 'Chưa xác định' ? `${brand} furniture 3d model` : `luxury furniture design`;
+        let q2 = type && type !== 'UNKNOWN' && type !== 'Chưa xác định' ? `luxury modern ${type} 3d model` : `luxury modern interior design`;
+        const [res1, res2] = await Promise.all([ fetchSerpApi(`https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(q1)}&api_key=${serpKey}`, searchAbortController.signal).catch(()=>null), fetchSerpApi(`https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(q2)}&api_key=${serpKey}`, searchAbortController.signal).catch(()=>null) ]);
+        renderSuggestRow(brandList, res1?.images_results); renderSuggestRow(typeList, res2?.images_results);
+    } catch (e) { brandList.innerHTML = typeList.innerHTML = '<p class="text-[9px] text-danger italic">Lỗi mạng.</p>'; }
+}
+
+function renderSuggestRow(container, images) {
+    if(!images || images.length === 0) { container.innerHTML = '<p class="text-[9px] text-metal italic">Không có dữ liệu</p>'; return; }
+    container.innerHTML = '';
+    const items = images.sort(() => 0.5 - Math.random()).slice(0, 10);
+    items.forEach(item => {
+        const safeTitle = (item.title || "Sản phẩm").replace(/'/g, "").replace(/"/g, "");
+        container.innerHTML += `<div onclick="analyzeFromSuggestUrl('${item.original}', '${safeTitle}')" class="w-[110px] min-w-[110px] flex-shrink-0 cursor-pointer group snap-start"><div class="w-full h-[110px] bg-dark rounded-lg overflow-hidden border border-border group-hover:border-gold transition-colors mb-2 relative"><div class="absolute inset-0 bg-gold/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"><i class="ph-bold ph-scan text-gold text-2xl"></i></div><img src="${item.thumbnail}" class="w-full h-full object-cover mix-blend-luminosity opacity-70 group-hover:opacity-100 transition-all"></div><p class="text-[9px] text-metal group-hover:text-white truncate font-bold uppercase tracking-wider">${safeTitle}</p></div>`;
+    });
+}
+
+async function analyzeFromSuggestUrl(imgUrl, title) {
+    if (!isApiKeyReady()) return; window.scrollTo({ top: 0, behavior: 'smooth' });
+    cancelSearch(); searchAbortController = new AbortController();
+    toggleHide('upload-zone', true); toggleHide('preview-zone', false); toggleHide('empty-state', true); toggleHide('ready-state', true); toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true);
+    resetImagePreviewUI();
+    getEl('loading-text').innerText = 'Đang kéo ảnh về...'; getEl('file-name-display').innerText = `[SUGGEST] ${title.substring(0, 15)}...`;
+    try {
+        const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(imgUrl)}`, { signal: searchAbortController.signal });
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = function() { currentImageB64 = reader.result.split(',')[1]; getEl('preview-image').src = reader.result; analyseImage(currentImageB64); }
+        reader.readAsDataURL(blob);
+    } catch(e) { if(e.name !== 'AbortError') { toggleHide('error-text', false); getEl('error-text').innerText = "Trang web chặn quyền tải ảnh."; } }
 }
 
 function drawRadar(m){
@@ -732,10 +672,7 @@ function drawRadar(m){
 
 function toggleAcc(id,iId){
   const e=getEl(id), i=getEl(iId);
-  if(e && i) {
-      if(e.classList.contains('open')){ e.style.maxHeight='0'; e.classList.remove('open'); i.classList.remove('rotate-180'); }
-      else { e.style.maxHeight=e.scrollHeight+'px'; e.classList.add('open'); i.classList.add('rotate-180'); }
-  }
+  if(e && i) { if(e.classList.contains('open')){ e.style.maxHeight='0'; e.classList.remove('open'); i.classList.remove('rotate-180'); } else { e.style.maxHeight=e.scrollHeight+'px'; e.classList.add('open'); i.classList.add('rotate-180'); } }
 }
 
 document.addEventListener('DOMContentLoaded', () => { 
@@ -743,34 +680,39 @@ document.addEventListener('DOMContentLoaded', () => {
     getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || '';
     getEl('cfg-serp').value = localStorage.getItem('serp_key') || '';
     getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || '';
+    initTypewriter();
 });
 
-function resetSystem() { 
-    cancelSearch();
-    toggleHide('upload-zone', false); toggleHide('preview-zone', true); 
-    toggleHide('empty-state', false); toggleHide('loading-state', true); toggleHide('results-state', true); 
-    toggleHide('ready-state', true); toggleHide('radar-card', true);
-    const f = getEl('file-upload'); if(f) f.value=''; currentImageB64=''; 
-    const iSearch = getEl('text-search-input'); if(iSearch) iSearch.value = '';
+function initTypewriter() {
+    const searchInput = getEl('text-search-input'); if (!searchInput) return;
+    const furBrands = ["1stdibs", "Arketipo", "B&B Italia", "Baker", "Baxter", "Bebitalia", "Bentley", "Boconcept", "Bonaldo", "Cantori", "Capital Collection", "Caracole", "Cassina", "Cattelan", "Cazarina", "ClassiCon", "Christopher Guy", "De Padova", "De Sede", "Ditre Italia", "Ethimo", "Fendi Casa", "Flexform", "Flou", "Frato", "Giorgetti", "IKEA", "La Redoute Interieurs", "Laskasas", "Lema", "Ligne Roset", "Loft concept", "Longhi", "Luxence Luxury Living", "Minotti", "MOBILIDEA", "Molteni & C", "Natuzzi Italia", "Palladium", "Poliform", "Poltrona Frau", "Potocco", "Pottery Barn", "RH Modena", "Roche Bobois", "Rugiano", "Signorini & Coco", "Smania", "Thonet", "Trussardi Casa", "Versace", "Visionnaire", "Vittoria Frigerio", "Vitra", "West Elm", "Zanotta"];
+    const lightBrands = ["Aromas del Campo", "Artemide", "Asttro Lighting", "Brand Van Egmond", "Brokis", "Castro_lighting", "Deltalight", "Flos", "Lightology", "LODES", "Luxxu", "Paolo Castelli"];
+    const techKitchBrands = ["AlvaMusa", "Apple", "Aster", "Bocelli", "Boffi", "Carpenter", "Elve", "Gaggenau", "Samsung"];
+    const types = ["Sofa", "Armchair", "Dining Table", "Coffee Table", "Bed", "Sideboard", "Lounge Chair", "Cabinet"];
+    const lightTypes = ["Chandelier", "Pendant Light", "Wall Lamp", "Floor Lamp"];
+    let brands = [];
+    for (let i = 0; i < 30; i++) brands.push(furBrands[Math.floor(Math.random() * furBrands.length)] + " " + types[Math.floor(Math.random() * types.length)]);
+    for (let i = 0; i < 10; i++) brands.push(lightBrands[Math.floor(Math.random() * lightBrands.length)] + " " + lightTypes[Math.floor(Math.random() * lightTypes.length)]);
+    brands.push("KAWS Companion", "Apple Vision Pro", "Samsung Bespoke");
+    brands = brands.sort(() => Math.random() - 0.5);
+    let brandIndex = 0, charIndex = 0, isDeleting = false;
+    function type() {
+        const currentBrand = brands[brandIndex]; if (document.activeElement === searchInput && searchInput.value !== "") return;
+        if (isDeleting) { searchInput.placeholder = currentBrand.substring(0, charIndex - 1); charIndex--; }
+        else { searchInput.placeholder = currentBrand.substring(0, charIndex + 1); charIndex++; }
+        let typingSpeed = isDeleting ? 30 : 60;
+        if (!isDeleting && charIndex === currentBrand.length) { typingSpeed = 2500; isDeleting = true; }
+        else if (isDeleting && charIndex === 0) { isDeleting = false; brandIndex = (brandIndex + 1) % brands.length; typingSpeed = 500; }
+        setTimeout(type, typingSpeed);
+    }
+    setTimeout(type, 1000); 
 }
+
+function resetSystem() { cancelSearch(); toggleHide('upload-zone', false); toggleHide('preview-zone', true); toggleHide('empty-state', false); toggleHide('loading-state', true); toggleHide('results-state', true); toggleHide('ready-state', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true); const f = getEl('file-upload'); if(f) f.value=''; currentImageB64=''; getEl('text-search-input').value = ''; }
 function resetAll() { location.reload(); }
-function openSettings() { 
-    const m = getEl('settings-modal'), b = getEl('settings-box'); 
-    getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || '';
-    getEl('cfg-serp').value = localStorage.getItem('serp_key') || '';
-    getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || '';
-    if(m) { m.classList.remove('hidden'); setTimeout(()=>{ m.classList.remove('opacity-0'); b?.classList.remove('scale-95'); },10); } 
-}
-function closeSettings() { 
-    const m = getEl('settings-modal'), b = getEl('settings-box'); 
-    if(m) { m.classList.add('opacity-0'); b?.classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),300); } 
-}
-function saveSettings() {
-    localStorage.setItem('imgbb_key', getEl('cfg-imgbb')?.value.trim() || '');
-    localStorage.setItem('serp_key', getEl('cfg-serp')?.value.trim() || '');
-    localStorage.setItem('gemini_key', getEl('cfg-gemini')?.value.trim() || '');
-    closeSettings();
-}
+function openSettings() { const m = getEl('settings-modal'), b = getEl('settings-box'); getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || ''; getEl('cfg-serp').value = localStorage.getItem('serp_key') || ''; getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || ''; if(m) { m.classList.remove('hidden'); setTimeout(()=>{ m.classList.remove('opacity-0'); b?.classList.remove('scale-95'); },10); } }
+function closeSettings() { const m = getEl('settings-modal'), b = getEl('settings-box'); if(m) { m.classList.add('opacity-0'); b?.classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),300); } }
+function saveSettings() { localStorage.setItem('imgbb_key', getEl('cfg-imgbb')?.value.trim() || ''); localStorage.setItem('serp_key', getEl('cfg-serp')?.value.trim() || ''); localStorage.setItem('gemini_key', getEl('cfg-gemini')?.value.trim() || ''); closeSettings(); }
 </script>
 </body>
 </html>
