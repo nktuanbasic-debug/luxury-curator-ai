@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Luxury Asset Curator V5 - Pro Edition</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<!-- THƯ VIỆN CẮT ẢNH -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<script>
+tailwind.config={theme:{extend:{colors:{dark:'#050505',panel:'#111111',border:'#222222',gold:'#D4AF37',goldlight:'#F3E5AB',metal:'#888888',danger:'#ef4444',success:'#10b981'}}}}
+</script>
+<style>
+*{box-sizing:border-box}
+body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#111111}::-webkit-scrollbar-thumb{background:#333333;border-radius:3px}
+.scan-line{position:absolute;width:100%;height:2px;background:rgba(212,175,55,.5);box-shadow:0 0 15px rgba(212,175,55,.8);animation:scan 2s linear infinite;display:none}
+@keyframes scan{0%{top:0}100%{top:100%}}
+.acc-content{max-height:0;overflow:hidden;transition:max-height .35s ease,opacity .25s ease;opacity:0}
+.acc-content.open{opacity:1}
+.badge-gold{background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));border:1px solid rgba(212,175,55,0.3);color:#D4AF37}
+.badge-metal{background:linear-gradient(135deg,rgba(136,136,136,0.15),rgba(136,136,136,0.05));border:1px solid rgba(136,136,136,0.3);color:#aaaaaa}
+.conf-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.conf-high{background:#D4AF37;box-shadow:0 0 8px rgba(212,175,55,0.6)}.conf-med{background:#888888}.conf-low{background:#ef4444}
+.space-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:4px;font-size:10px;border:1px solid #333;background:#161616;color:#aaa;margin:3px;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;transition:all 0.2s;}
+.space-chip:hover{border-color:#D4AF37;color:#D4AF37;background:rgba(212,175,55,0.05)}
+.platform-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid;cursor:pointer;transition:all .2s;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em}
+.step-dot{width:8px;height:8px;border-radius:50%;background:#333;transition:background .3s}
+.step-lbl{font-size:10px;color:#666;transition:color .3s;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+.cropper-view-box, .cropper-face { border-radius: 0px; }
+.cropper-line, .cropper-point { background-color: #D4AF37; }
+.cropper-view-box { outline: 1px solid #D4AF37; }
+</style>
+</head>
+<body class="min-h-screen p-4 md:p-6 flex flex-col items-center relative selection:bg-gold selection:text-black">
+
+<div id="crop-modal" class="hidden fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-4xl flex flex-col h-full max-h-[85vh] bg-panel border border-border overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300" id="crop-box">
+    <div class="flex items-center justify-between p-5 border-b border-border bg-panel">
+      <h2 class="text-sm font-bold text-gold uppercase tracking-widest flex items-center gap-2"><i class="ph-bold ph-crop"></i> Chuẩn bị ảnh phân tích</h2>
+      <button onclick="closeCropModal()" class="text-metal hover:text-gold transition-colors"><i class="ph ph-x text-lg"></i></button>
+    </div>
+    <div class="flex-1 w-full bg-dark relative overflow-hidden flex items-center justify-center p-4">
+      <img id="image-to-crop" src="" alt="Picture" class="max-w-full max-h-full block">
+    </div>
+    <div class="p-5 border-t border-border bg-panel flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p class="text-xs text-metal font-light text-center sm:text-left">Kéo khung cắt bỏ viền thừa để Lens quét chuẩn nhất.<br><span class="text-gold">Hoặc bấm phân tích toàn ảnh nếu không cần cắt.</span></p>
+        <div class="flex items-center gap-4">
+            <button onclick="confirmCrop(false)" class="px-5 py-2.5 text-xs font-bold text-metal bg-dark border border-border hover:text-white hover:border-metal uppercase tracking-widest transition-all rounded-lg">Phân tích toàn ảnh</button>
+            <button onclick="confirmCrop(true)" class="px-6 py-2.5 text-xs bg-gold hover:bg-goldlight text-black font-bold uppercase tracking-widest transition-all flex items-center gap-2 rounded-lg">
+                <i class="ph-bold ph-scissors"></i> Cắt & Phân tích
+            </button>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div id="settings-modal" class="hidden fixed inset-0 z-[90] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+  <div class="bg-panel border border-border w-full max-w-md p-8 rounded-xl transform scale-95 transition-transform duration-300 shadow-2xl" id="settings-box">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-sm font-bold text-gold uppercase tracking-widest flex items-center gap-2"><i class="ph-fill ph-gear"></i> System Config</h2>
+      <button onclick="closeSettings()" class="text-metal hover:text-gold"><i class="ph ph-x text-lg"></i></button>
+    </div>
+    <div class="bg-gold/5 border border-gold/20 p-4 mb-6 rounded-lg">
+        <p class="text-[10px] text-gold font-bold uppercase tracking-widest mb-1">Cấu hình API Keys:</p>
+        <p class="text-[11px] text-metal font-light leading-relaxed">Dữ liệu sẽ được lưu cục bộ trong trình duyệt của bạn (localStorage). Hệ thống không thu thập các key này.</p>
+    </div>
+    
+    <div class="space-y-5">
+      <div>
+        <label class="block text-[10px] text-metal uppercase tracking-widest mb-2 font-bold flex justify-between">
+          <span>Gemini API Key</span> <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-gold hover:underline">Get Key ↗</a>
+        </label>
+        <input type="password" id="cfg-gemini" class="w-full bg-dark border border-border rounded-lg px-4 py-2.5 text-sm text-white focus:border-gold outline-none transition-colors" placeholder="Bắt buộc...">
+      </div>
+      <div>
+        <label class="block text-[10px] text-metal uppercase tracking-widest mb-2 font-bold flex justify-between">
+          <span>ImgBB API Key</span> <a href="https://api.imgbb.com/" target="_blank" class="text-gold hover:underline">Get Key ↗</a>
+        </label>
+        <input type="password" id="cfg-imgbb" class="w-full bg-dark border border-border rounded-lg px-4 py-2.5 text-sm text-white focus:border-gold outline-none transition-colors" placeholder="Bắt buộc...">
+      </div>
+      <div>
+        <label class="block text-[10px] text-metal uppercase tracking-widest mb-2 font-bold flex justify-between">
+          <span>SerpApi Key (Lens)</span> <a href="https://serpapi.com/" target="_blank" class="text-gold hover:underline">Get Key ↗</a>
+        </label>
+        <input type="password" id="cfg-serp" class="w-full bg-dark border border-border rounded-lg px-4 py-2.5 text-sm text-white focus:border-gold outline-none transition-colors" placeholder="Bắt buộc...">
+      </div>
+    </div>
+    <button id="save-btn" onclick="saveSettings()" class="w-full mt-8 py-3 bg-gold rounded-lg hover:bg-goldlight text-black font-bold uppercase tracking-widest text-xs transition-all">Lưu Cấu Hình</button>
+  </div>
+</div>
+
+<header class="w-full max-w-7xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-border pb-6">
+  <div>
+    <h1 class="text-2xl font-black flex items-center gap-3 text-white uppercase tracking-wider">
+      <i class="ph-fill ph-diamond text-gold"></i>
+      <span>Luxury Curator</span>
+    </h1>
+    <p class="text-metal text-xs mt-2 tracking-widest uppercase">Visual & Text 3D Asset Identification</p>
+  </div>
+  <div class="flex items-center gap-3 mt-4 md:mt-0">
+    <div class="bg-dark p-1 border border-border rounded-lg flex items-center relative shadow-inner">
+        <div id="mode-bg" class="absolute top-1 bottom-1 w-[80px] left-1 bg-border rounded transition-transform duration-300 z-0"></div>
+        <button onclick="setMode('basic')" id="btn-mode-basic" class="relative z-10 w-[80px] text-[10px] font-bold text-white py-2 uppercase tracking-widest outline-none">Basic</button>
+        <button onclick="setMode('lens')" id="btn-mode-lens" class="relative z-10 w-[80px] text-[10px] font-bold text-metal py-2 uppercase tracking-widest outline-none">Advanced</button>
+    </div>
+    <button onclick="openSettings()" class="flex items-center justify-center w-10 h-10 bg-dark border border-border rounded-lg hover:border-gold text-metal hover:text-gold transition-all shadow-sm">
+      <i class="ph-fill ph-sliders-horizontal text-lg"></i>
+    </button>
+    <button onclick="resetAll()" class="flex items-center gap-2 bg-dark border border-border rounded-lg hover:border-danger/50 px-5 h-10 text-xs font-bold text-metal hover:text-danger uppercase tracking-widest transition-all shadow-sm">
+      <i class="ph ph-trash"></i> Clear
+    </button>
+  </div>
+</header>
+
+<main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <div class="lg:col-span-5 flex flex-col gap-6">
+    <div class="bg-panel border border-border p-1.5 rounded-lg flex gap-2 shadow-lg relative group">
+      <div class="absolute -inset-0.5 bg-gradient-to-r from-gold/0 via-gold/10 to-gold/0 opacity-0 group-hover:opacity-100 transition duration-500 blur rounded-lg"></div>
+      <div class="relative flex items-center w-full bg-dark border border-border rounded">
+          <div class="px-4 text-gold"><i class="ph-bold ph-text-t"></i></div>
+          <input type="text" id="text-search-input" placeholder="Tìm kiếm bằng văn bản (VD: Minotti Osaka)..." class="flex-1 bg-transparent text-xs text-white outline-none py-4 placeholder-metal tracking-wider w-full" onkeypress="if(event.key==='Enter') startTextSearch()">
+          <button onclick="startTextSearch()" class="bg-gold text-black hover:bg-goldlight px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 border-l border-border whitespace-nowrap rounded-r">
+            <i class="ph-bold ph-magnifying-glass text-sm"></i> Tìm
+          </button>
+      </div>
+    </div>
+
+    <div id="upload-zone" class="bg-panel border border-border hover:border-gold/50 rounded-xl h-[360px] flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all group relative overflow-hidden">
+      <input type="file" class="hidden" id="file-upload" accept="image/*">
+      <div class="w-16 h-16 rounded-full bg-dark border border-border flex items-center justify-center mb-6 group-hover:border-gold/50 transition-all pointer-events-none">
+        <i class="ph ph-image text-2xl text-gold"></i>
+      </div>
+      <h3 class="text-sm font-bold mb-2 text-white uppercase tracking-widest pointer-events-none">Tải ảnh lên</h3>
+      <p class="text-metal text-xs font-light mb-6 pointer-events-none">Kéo thả hoặc Ctrl+V để nạp ảnh</p>
+      <span class="bg-gold/10 border border-gold/30 text-gold px-6 py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all pointer-events-none">Chọn File</span>
+    </div>
+
+    <div id="preview-zone" class="hidden bg-panel border border-border rounded-xl overflow-hidden relative h-[360px]">
+      <button onclick="resetSystem()" class="absolute top-4 right-4 z-30 w-8 h-8 bg-dark/80 border border-border backdrop-blur-md rounded-full flex items-center justify-center text-metal hover:text-white hover:bg-danger/80 hover:border-danger transition-all cursor-pointer">
+        <i class="ph-bold ph-x text-xs"></i>
+      </button>
+      <div class="absolute top-4 left-4 z-10 bg-dark/80 border border-border rounded-md px-3 py-1.5 text-[10px] font-mono text-metal flex items-center gap-2 uppercase tracking-widest">
+        <i class="ph-bold ph-aperture text-gold"></i> <span id="file-name-display">image.jpg</span>
+      </div>
+      <div class="relative h-full bg-dark flex items-center justify-center p-4">
+        <img id="preview-image" src="" alt="preview" class="max-w-full max-h-full object-contain">
+        <div id="scan-line" class="scan-line"></div>
+      </div>
+    </div>
+
+    <div id="radar-card" class="hidden bg-panel border border-border rounded-xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-[10px] font-bold text-metal uppercase tracking-widest flex items-center gap-2"><i class="ph-fill ph-chart-polar text-gold"></i> Thẩm định hình khối</h3>
+      </div>
+      <div class="flex justify-center py-2"><canvas id="radarCanvas" width="300" height="260"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: LOADING & KẾT QUẢ -->
+  <div class="lg:col-span-7 bg-panel border border-border rounded-xl flex flex-col relative overflow-hidden min-h-[400px]">
+    
+    <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-metal p-10 h-full">
+      <i class="ph ph-cube text-6xl mb-6 opacity-20"></i>
+      <p class="text-xs uppercase tracking-widest font-bold text-center leading-loose">Nhập văn bản tìm kiếm<br>hoặc nạp ảnh để bắt đầu</p>
+    </div>
+
+    <div id="ready-state" class="hidden flex-1 flex flex-col items-center justify-center p-10 text-center bg-panel h-full border-t-2 border-gold/20">
+      <i class="ph-fill ph-check-circle text-5xl text-gold mb-6 opacity-80 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]"></i>
+      <p class="text-sm text-white font-bold mb-3 uppercase tracking-widest">Ảnh đã sẵn sàng</p>
+      <p class="text-xs text-metal font-light max-w-sm mx-auto mb-10 leading-relaxed">Cắt xén để loại bỏ nền thừa, hoặc bắt đầu tiến trình định danh ngay lập tức.</p>
+      <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+        <button onclick="openCropModal(currentImageB64)" class="flex-1 px-5 py-4 rounded-lg text-[11px] text-white bg-dark border border-border hover:border-metal flex items-center justify-center gap-2 font-bold uppercase tracking-widest transition-all">
+            <i class="ph-bold ph-crop text-sm text-gold"></i> Cắt xén
+        </button>
+        <button onclick="startAnalysis()" class="flex-1 px-5 py-4 rounded-lg text-[11px] bg-gold hover:bg-goldlight text-black font-bold uppercase tracking-widest shadow-[0_0_20px_rgba(212,175,55,0.2)] transition-all flex items-center justify-center gap-2">
+            <i class="ph-bold ph-scan text-sm"></i> Bắt đầu quét
+        </button>
+      </div>
+    </div>
+
+    <div id="loading-state" class="hidden absolute inset-0 bg-panel z-10 flex flex-col items-center justify-center p-8">
+      <div class="relative w-16 h-16 mb-8">
+        <div class="absolute inset-0 border border-border rounded-full"></div>
+        <div class="absolute inset-0 border border-t-gold rounded-full animate-spin"></div>
+        <div class="absolute inset-0 flex items-center justify-center text-gold text-sm"><i class="ph-fill ph-diamond"></i></div>
+      </div>
+      <p id="loading-text" class="text-[11px] text-gold uppercase tracking-widest font-bold text-center mb-8"></p>
+      <div id="step-indicators" class="flex items-center gap-3 w-full max-w-sm justify-center mb-8">
+        <div class="flex items-center gap-1.5"><div class="step-dot" id="s1-dot"></div><span class="step-lbl" id="s1-lbl">Trích xuất</span></div>
+        <div class="w-8 h-px bg-border"></div>
+        <div class="flex items-center gap-1.5"><div class="step-dot" id="s2-dot"></div><span class="step-lbl" id="s2-lbl">Google</span></div>
+        <div class="w-8 h-px bg-border"></div>
+        <div class="flex items-center gap-1.5"><div class="step-dot" id="s3-dot"></div><span class="step-lbl" id="s3-lbl">AI Core</span></div>
+      </div>
+      <button onclick="cancelSearch()" class="px-6 py-2.5 rounded-lg text-[10px] border border-danger/30 text-danger hover:bg-danger/10 uppercase tracking-widest transition-colors flex items-center gap-2 font-bold">
+          <i class="ph-bold ph-stop-circle text-sm"></i> Ngắt tiến trình
+      </button>
+      <p id="error-text" class="text-xs text-danger mt-6 hidden text-center max-w-xs font-mono leading-relaxed"></p>
+    </div>
+
+    <div id="results-state" class="hidden absolute inset-0 bg-panel z-20 overflow-y-auto p-6 pb-12">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b border-border">
+        <span class="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-gold shadow-[0_0_8px_rgba(212,175,55,0.8)]"></div> Báo cáo định danh</span>
+        <span id="confidence-badge" class="text-[9px] px-3 py-1 font-bold uppercase tracking-widest rounded border"></span>
+      </div>
+
+      <div class="bg-dark border border-border rounded-xl p-6 mb-6 shadow-xl">
+        <div id="ai-disclaimer" class="mb-6"></div>
+        <div class="grid grid-cols-2 gap-8 mb-4">
+          <div class="col-span-2 md:col-span-1">
+            <p class="text-[9px] text-metal uppercase tracking-widest mb-2 font-bold">Loại Sản Phẩm</p>
+            <div id="res-product-type" class="text-sm text-gold font-bold mb-4 tracking-wide uppercase"></div>
+            <p class="text-[9px] text-metal uppercase tracking-widest mb-2 font-bold">Thương hiệu / Nhà sản xuất</p>
+            <p id="res-brand" class="text-lg font-black text-white leading-tight mb-4 tracking-wide uppercase"></p>
+            <p class="text-[9px] text-metal uppercase tracking-widest mb-2 font-bold">Tên Model</p>
+            <div id="res-product-name" class="text-lg font-black uppercase tracking-wide"></div>
+            <p id="res-designer" class="text-[10px] text-metal mt-4 uppercase tracking-widest font-bold"></p>
+            <a id="res-exact-link" href="#" target="_blank" class="hidden mt-6 items-center gap-2 bg-gold text-black px-6 py-3 rounded-lg text-[10px] uppercase tracking-widest font-bold hover:bg-goldlight transition-all w-fit shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+              <i class="ph-bold ph-storefront text-sm"></i> <span>Đi Đến Cửa Hàng</span>
+            </a>
+          </div>
+          <div class="col-span-2 md:col-span-1 flex flex-col gap-6">
+            <div><p class="text-[9px] text-metal uppercase tracking-widest mb-2 font-bold">Phong cách</p><span id="res-style" class="inline-block text-xs font-bold px-3 py-1.5 bg-panel border border-border rounded text-white uppercase tracking-wider"></span></div>
+            <div><p class="text-[9px] text-metal uppercase tracking-widest mb-2 font-bold">Phân khúc</p><span id="res-luxury-badge" class="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded uppercase tracking-wider"></span></div>
+          </div>
+        </div>
+
+        <div id="search-toolkit" class="hidden pt-6 border-t border-border mt-6">
+          <div class="flex items-center gap-2 mb-4"><i class="ph-fill ph-magnifying-glass text-gold"></i><p class="text-[10px] text-gold uppercase tracking-widest font-bold">Công cụ tìm kiếm 3D</p></div>
+          <div class="bg-panel border border-border p-5 mb-5 rounded-lg shadow-md">
+            <p class="text-[9px] text-metal uppercase tracking-widest mb-3 font-bold">Từ khóa đại diện</p>
+            <div class="flex items-center w-full bg-[#050505] border border-border rounded-lg overflow-hidden mb-5 shadow-inner">
+                 <div class="px-4 text-gold"><i class="ph-bold ph-text-t text-lg"></i></div>
+                 <input type="text" id="main-keyword-text" readonly class="flex-1 bg-transparent text-white font-bold text-sm py-4 outline-none uppercase tracking-wider truncate w-full" value="">
+                 <button onclick="safeCopyText(document.getElementById('main-keyword-text').value, this)" class="px-6 py-4 bg-border text-metal hover:bg-gold hover:text-black font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 border-l border-border shrink-0">
+                    <i class="ph-bold ph-copy text-sm"></i> Copy
+                 </button>
+            </div>
+            <p class="text-[9px] text-metal uppercase tracking-widest mb-3 font-bold">Mở nhanh trên nền tảng:</p>
+            <div id="platform-links" class="flex flex-wrap gap-2"></div>
+          </div>
+          <div id="related-keywords-box" class="hidden">
+            <p class="text-[9px] text-metal uppercase tracking-widest mb-3 font-bold">Các từ khóa thay thế (Bấm để Copy)</p>
+            <div id="related-keywords-list" class="flex flex-wrap gap-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-6 mb-6">
+        <div class="bg-dark border border-border rounded-xl p-5 flex flex-col items-center justify-center"><p class="text-[9px] text-metal uppercase tracking-widest mb-3 font-bold">Thẩm mỹ</p><p class="text-5xl font-black text-gold" id="res-score">—</p></div>
+        <div class="col-span-2 bg-dark border border-border rounded-xl p-6"><div id="sub-scores" class="flex flex-col gap-3"></div></div>
+      </div>
+
+      <div class="bg-dark border border-border rounded-xl overflow-hidden">
+        <button class="w-full p-6 flex items-center justify-between hover:bg-panel transition-all" onclick="toggleAcc('acc-aesthetic','icon-aesthetic')">
+          <div class="flex items-center gap-4 text-left">
+            <i class="ph-light ph-text-align-justify text-2xl text-gold"></i>
+            <div><p class="text-xs font-bold text-white uppercase tracking-widest">Đánh giá chuyên sâu</p><p class="text-[10px] text-metal mt-1">Phân tích hình khối & vật liệu</p></div>
+          </div>
+          <i id="icon-aesthetic" class="ph-bold ph-caret-down text-metal transition-transform"></i>
+        </button>
+        <div id="acc-aesthetic" class="acc-content border-t border-border"><div class="p-6 text-xs text-gray-300 leading-loose font-light" id="res-aesthetic"></div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// =====================================================================
+// CHÚ Ý DÀNH CHO CỘNG ĐỒNG SHARE CODE
+// Sử dụng model 1.5-flash để đảm bảo API Key phổ thông nào cũng chạy được.
+// =====================================================================
+const GEMINI_MODEL = "gemini-1.5-flash";
+
+function getEl(id) { return document.getElementById(id); }
+function toggleHide(id, hide) { const el = getEl(id); if(el) { if(hide) el.classList.add('hidden'); else el.classList.remove('hidden'); } }
+
+window.safeCopyText = function(text, btn) {
+    if(!text) return;
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        const origHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="ph-bold ph-check text-sm text-black"></i> <span class="text-black font-bold">COPIED</span>';
+        btn.classList.add('bg-success', 'border-success');
+        btn.classList.remove('text-metal', 'bg-border', 'hover:bg-gold');
+        setTimeout(() => {
+            btn.innerHTML = origHTML;
+            btn.classList.remove('bg-success', 'border-success');
+            btn.classList.add('text-metal', 'bg-border', 'hover:bg-gold');
+        }, 1500);
+    } catch (err) {
+        console.error('Copy failed', err);
+    }
+    document.body.removeChild(textArea);
+};
+
+let searchAbortController = null;
+function cancelSearch() {
+    if (searchAbortController) {
+        searchAbortController.abort(); searchAbortController = null;
+        const sl = getEl('scan-line'); if (sl) sl.style.display = 'none';
+        const lt = getEl('loading-text'); if (lt) lt.innerText = 'Đã hủy lệnh!';
+    }
+}
+
+let currentMode = localStorage.getItem('search_mode') || 'basic';
+function setMode(mode) {
+    currentMode = mode; localStorage.setItem('search_mode', mode);
+    const bg = getEl('mode-bg'), btnB = getEl('btn-mode-basic'), btnL = getEl('btn-mode-lens');
+    if (mode === 'lens') {
+        if(bg) bg.style.transform = 'translateX(80px)';
+        btnL?.classList.replace('text-metal', 'text-white'); btnB?.classList.replace('text-white', 'text-metal');
+    } else {
+        if(bg) bg.style.transform = 'translateX(0)';
+        btnB?.classList.replace('text-metal', 'text-white'); btnL?.classList.replace('text-white', 'text-metal');
+    }
+}
+
+async function fetchSerpApi(targetUrl, signal) {
+    try {
+        const directRes = await fetch(targetUrl, { signal });
+        if (directRes.ok) {
+            const data = await directRes.json();
+            if(!data.error) return data;
+        }
+    } catch(e) {
+        if (e.name === 'AbortError') throw e;
+    }
+
+    const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+    ];
+    let lastErr = null;
+    for (let p of proxies) {
+        try {
+            const r = await fetch(p, { signal });
+            if (!r.ok) continue; 
+            const data = await r.json();
+            if (data.error) throw new Error(data.error); 
+            return data;
+        } catch (e) {
+            if (e.name === 'AbortError') throw e;
+            lastErr = e;
+        }
+    }
+    throw new Error(lastErr?.message || "Cầu nối mạng bị quá tải. Vui lòng thử lại sau.");
+}
+
+const jsonSchema = `{"product_type": "BẮT BUỘC GHI: Sofa, Armchair, Dining Chair, Bed, Table...", "main_brand": "Tên thương hiệu. Nếu không rõ, ghi 'Chưa xác định'", "product_name": "Tên Model. Nếu không rõ, ghi 'Chưa xác định'", "homepage_link": "Link trang web gốc của hãng (ví dụ: https://www.fendicasa.com) hoặc NONE", "designer": "Tên tác giả hoặc 'Chưa xác định'", "main_search_keyword": "TỪ KHÓA CHÍNH (TỐI ĐA 1 ĐẾN 4 TỪ). Nếu có Hãng+Model thì ghép lại. Nếu không có, CHỈ GHI loại đồ + chất liệu (vd: tiger print sofa). CẤM VIẾT CÂU DÀI.", "related_keywords": ["keyword 1", "keyword 2", "keyword 3"], "style": "...", "is_luxury": true, "score_total": 8.5, "form_score": 8, "proportion_score": 8, "color_score": 8, "detail_score": 8, "material_score": 8, "luxury_index": 8, "match_status": "GHI ĐÚNG 1 TRONG 2 CHỮ: 'EXACT' (tự tin 100%), hoặc 'GUESS' (suy đoán)", "aesthetic_analysis": "Đánh giá chi tiết thẩm mỹ và vật liệu (3-4 câu)"}`;
+
+function isApiKeyReady() {
+    const geminiKey = localStorage.getItem('gemini_key');
+    const imgKey = localStorage.getItem('imgbb_key');
+    const serpKey = localStorage.getItem('serp_key');
+    
+    if (!geminiKey) {
+        alert("Lỗi: Yêu cầu nhập Gemini API Key để AI hoạt động!\nVui lòng nhấp vào biểu tượng bánh răng để cài đặt.");
+        openSettings();
+        return false;
+    }
+    if (currentMode === 'lens' && (!imgKey || !serpKey)) {
+        alert("Lỗi: Chế độ Advanced yêu cầu nhập API Key của ImgBB và SerpApi!\nVui lòng nhấp vào biểu tượng bánh răng để cài đặt.");
+        openSettings();
+        return false;
+    }
+    return true;
+}
+
+async function startTextSearch() {
+    const inputEl = getEl('text-search-input');
+    if(!inputEl) return;
+    const query = inputEl.value.trim();
+    if(!query) return;
+
+    if (!isApiKeyReady()) return;
+
+    cancelSearch(); searchAbortController = new AbortController(); const signal = searchAbortController.signal;
+    const serpKey = localStorage.getItem('serp_key');
+
+    toggleHide('upload-zone', true); toggleHide('preview-zone', false);
+    toggleHide('empty-state', true); toggleHide('ready-state', true);
+    toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true);
+    
+    const sl = getEl('scan-line'); if(sl) sl.style.display = 'block';
+    [1,2,3].forEach(stepReset);
+
+    try {
+        const gemKey = localStorage.getItem('gemini_key') || "";
+        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${gemKey}`;
+        const lt = getEl('loading-text');
+        
+        stepActive(1);
+        if (lt) lt.innerText = 'Đang tìm kiếm hình ảnh...';
+        
+        if (!serpKey && currentMode === 'basic') {
+            // Chế độ Basic + Tìm chữ không cần SerpApi, chỉ đoán chay
+            getEl('preview-image').src = "";
+            getEl('file-name-display').innerText = `[TEXT] ${query}`;
+            stepDone(1); stepDone(2); 
+        } else {
+            const serpUrl = `https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(query)}&api_key=${serpKey}`;
+            const data = await fetchSerpApi(serpUrl, signal);
+            if(!data.images_results || data.images_results.length === 0) throw new Error("Không tìm thấy hình ảnh nào cho từ khóa này.");
+            getEl('preview-image').src = data.images_results[0].thumbnail;
+            getEl('file-name-display').innerText = `[TEXT] ${query}`;
+            stepDone(1); stepDone(2); 
+        }
+
+        stepActive(3);
+        if (lt) lt.innerText = 'AI đang phân tích...';
+        
+        const P = `Người dùng đang tìm kiếm món đồ nội thất bằng từ khóa: "${query}".
+        NHIỆM VỤ: 
+        1. Dựa vào kiến thức nội thất của bạn, định danh chi tiết sản phẩm này.
+        2. BẮT BUỘC ĐIỀN match_status: Nếu từ khóa là một mô tả chung chung (vd: "sofa màu đen"), hãy ghi match_status là "GUESS". Nếu từ khóa là tên hãng/model cụ thể, ghi match_status là "EXACT".
+        TRẢ JSON: ${jsonSchema}`;
+        
+        const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P}]}]}), signal });
+        let d3 = parseJSON(await r3.json()); d3._mode = 'text';
+        stepDone(3);
+        
+        render(d3);
+    } catch(err) {
+        if(err.name === 'AbortError') { resetSystem(); }
+        else { const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; }
+    }
+}
+
+let cropper = null;
+let originalImageB64 = "";
+let currentImageB64 = "";
+let currentFileName = "image.jpg";
+
+function openCropModal(b64) {
+  const modal = getEl('crop-modal'), imgEl = getEl('image-to-crop');
+  if(!modal || !imgEl || !b64) return;
+  imgEl.src = "data:image/jpeg;base64," + b64;
+  modal.classList.remove('hidden');
+  setTimeout(()=> {
+      modal.classList.remove('opacity-0'); getEl('crop-box')?.classList.remove('scale-95');
+      if(cropper) cropper.destroy();
+      cropper = new Cropper(imgEl, { viewMode: 1, autoCropArea: 0.9, background: false });
+  }, 50);
+}
+function closeCropModal() {
+  const m = getEl('crop-modal'); if(m) m.classList.add('opacity-0'); getEl('crop-box')?.classList.add('scale-95');
+  setTimeout(()=> { 
+      if(m) m.classList.add('hidden'); cropper?.destroy(); cropper = null; 
+      if (currentImageB64) { 
+          if (getEl('results-state').classList.contains('hidden')) { showReadyState(); } 
+      } else { resetSystem(); }
+  }, 300);
+}
+function confirmCrop(doCrop) {
+    let finalB64 = originalImageB64;
+    if(doCrop && cropper) {
+        const canvas = cropper.getCroppedCanvas({ maxWidth: 1024, maxHeight: 1024, fillColor: '#050505' });
+        if(canvas) finalB64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    }
+    const m = getEl('crop-modal'); if(m) m.classList.add('opacity-0'); getEl('crop-box')?.classList.add('scale-95');
+    setTimeout(()=> { 
+        if(m) m.classList.add('hidden'); cropper?.destroy(); cropper = null; 
+        currentImageB64 = finalB64;
+        analyseImage(finalB64); 
+    }, 300);
+}
+
+const uZone = document.getElementById('upload-zone');
+uZone.addEventListener('click', e => { getEl('file-upload')?.click(); });
+document.getElementById('file-upload').addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+uZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); uZone.classList.add('border-gold'); });
+uZone.addEventListener('dragleave', e => { e.preventDefault(); e.stopPropagation(); uZone.classList.remove('border-gold'); });
+uZone.addEventListener('drop', e => {
+    e.preventDefault(); e.stopPropagation(); uZone.classList.remove('border-gold');
+    if(e.dataTransfer.files && e.dataTransfer.files[0]) { handleFile(e.dataTransfer.files[0]); }
+});
+
+document.addEventListener('paste', e => {
+  if(['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  const cb = e.clipboardData; if(!cb) return;
+  if(cb.files?.[0]?.type.startsWith('image/')) { handleFile(cb.files[0]); return; }
+  for(let i=0; i<cb.items.length; i++) {
+    if(cb.items[i].type.indexOf('image')!==-1) {
+        const b = cb.items[i].getAsFile(); if(b) handleFile(new File([b],'paste-'+Date.now()+'.png',{type:b.type})); return;
+    }
+  }
+});
+
+function handleFile(file){
+  if(!file.type.startsWith('image/')) return;
+  cancelSearch();
+  const fInp = getEl('file-name-display'); if(fInp) fInp.innerText = file.name;
+  currentFileName = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+          const cv = document.createElement('canvas'); const MAX = 1200; let w=img.width, h=img.height;
+          if(w>h && w>MAX){ h=Math.round(h*MAX/w); w=MAX; } else if(h>MAX){ w=Math.round(w*MAX/h); h=MAX; }
+          cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
+          originalImageB64 = cv.toDataURL('image/jpeg', 0.85).split(',')[1];
+          currentImageB64 = originalImageB64;
+          openCropModal(originalImageB64);
+      };
+      img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function stepActive(n){ getEl(`s${n}-dot`)?.style.setProperty('background', '#D4AF37'); getEl(`s${n}-lbl`)?.style.setProperty('color', '#D4AF37'); }
+function stepDone(n){ getEl(`s${n}-dot`)?.style.setProperty('background', '#10b981'); getEl(`s${n}-lbl`)?.style.setProperty('color', '#10b981'); }
+function stepReset(n){ getEl(`s${n}-dot`)?.style.setProperty('background', '#333'); getEl(`s${n}-lbl`)?.style.setProperty('color', '#666'); }
+
+function startAnalysis() { 
+    if (!isApiKeyReady()) return;
+    if (currentImageB64) analyseImage(currentImageB64); 
+}
+
+async function analyseImage(b64){
+  cancelSearch(); searchAbortController = new AbortController(); const signal = searchAbortController.signal;
+  const imgKey = localStorage.getItem('imgbb_key');
+  const serpKey = localStorage.getItem('serp_key');
+
+  toggleHide('upload-zone', true); toggleHide('preview-zone', false);
+  toggleHide('empty-state', true); toggleHide('ready-state', true);
+  toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true);
+  
+  const sl = getEl('scan-line'); if(sl) sl.style.display = 'block';
+  const pImg = getEl('preview-image'); if(pImg) pImg.src = "data:image/jpeg;base64," + b64;
+  [1,2,3].forEach(stepReset);
+
+  try {
+    const gemKey = localStorage.getItem('gemini_key') || "";
+    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${gemKey}`;
+    let d3 = null;
+
+    if (currentMode === 'lens') {
+        const lt = getEl('loading-text');
+        
+        stepActive(1);
+        if (lt) lt.innerText = 'Đang trích xuất hình ảnh...';
+        const body = new URLSearchParams(); body.append('image', b64);
+        const r1 = await fetch(`https://api.imgbb.com/1/upload?key=${imgKey}`, { method: 'POST', body, signal });
+        if(!r1.ok) throw new Error("Lỗi Upload ảnh. Vui lòng kiểm tra lại Key ImgBB.");
+        const d1 = await r1.json(); const imgUrl = d1.data.url;
+        stepDone(1);
+
+        stepActive(2);
+        if (lt) lt.innerText = 'Google Lens running...';
+        const serpUrl = `https://serpapi.com/search.json?engine=google_lens&url=${encodeURIComponent(imgUrl)}&api_key=${serpKey}`;
+        
+        const data = await fetchSerpApi(serpUrl, signal);
+        const lensMatches = data.visual_matches?.slice(0, 15).map(m => `- ${m.title} | Link: ${m.link}`).join('\n') || "Không có";
+        stepDone(2);
+
+        stepActive(3);
+        if (lt) lt.innerText = 'AI đang thẩm định...';
+        const P3 = `Đọc dữ liệu Google Lens: """${lensMatches}""". 
+NHIỆM VỤ: 1. ĐỊNH DANH (CẤM BỊA ĐẶT): Chỉ trích xuất Tên Hãng và Model nếu Lens có nhắc đến. 
+2. XÁC NHẬN ĐỘ TIN CẬY (match_status): Nếu Lens tìm đúng sản phẩm và bạn tự tin 100%, ghi EXACT. Nếu phải đoán hình dáng, ghi GUESS.
+3. LINK: Chỉ bóc Domain gốc của hãng để làm homepage_link.
+Trả JSON: ${jsonSchema}`;
+        const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P3},{inlineData:{mimeType:'image/jpeg',data:b64}}]}]}), signal });
+        d3 = parseJSON(await r3.json()); d3._mode = 'lens';
+        stepDone(3);
+    } else {
+        stepActive(1); stepActive(2); stepActive(3);
+        const lt = getEl('loading-text'); if (lt) lt.innerText = 'AI visual analysis...';
+        const P_Basic = `Chế độ cơ bản. CẤM BỊA TÊN. Đặt main_brand, product_name, designer là 'Chưa xác định'. Đặt match_status="GUESS". Trả JSON: ${jsonSchema}`;
+        const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P_Basic},{inlineData:{mimeType:'image/jpeg',data:b64}}]}]}), signal });
+        d3 = parseJSON(await r3.json()); d3._mode = 'guess';
+        stepDone(1); stepDone(2); stepDone(3);
+    }
+    render(d3);
+  } catch(err) {
+    if(err.name === 'AbortError') { resetSystem(); }
+    else { const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; }
+  }
+}
+
+function parseJSON(r){ const t = r.candidates[0].content.parts.map(p=>p.text).join(''); return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}')+1)); }
+
+function showReadyState() {
+  toggleHide('upload-zone', true); toggleHide('preview-zone', false);
+  toggleHide('empty-state', true); toggleHide('loading-state', true);
+  toggleHide('ready-state', false); 
+  const pImg = getEl('preview-image'); if (pImg) pImg.src = "data:image/jpeg;base64," + currentImageB64;
+  const fn = getEl('file-name-display'); if (fn) fn.innerText = currentFileName;
+}
+
+function render(d){
+  toggleHide('loading-state', true); toggleHide('results-state', false);
+  const sl = getEl('scan-line'); if (sl) sl.style.display='none'; 
+  const pImg = getEl('preview-image'); if (pImg) pImg.classList.remove('opacity-75');
+  
+  const disclaimerEl = getEl('ai-disclaimer');
+  if (disclaimerEl) {
+      if (d.match_status === 'EXACT') {
+          disclaimerEl.className = "mb-6 p-4 border border-success/30 bg-success/10 text-success text-[11px] rounded-lg flex items-center gap-3 uppercase tracking-widest font-bold shadow-lg shadow-success/5";
+          disclaimerEl.innerHTML = '<i class="ph-fill ph-shield-check text-2xl"></i> Đã xác nhận chính xác thông tin';
+      } else {
+          disclaimerEl.className = "mb-6 p-4 border border-gold/30 bg-gold/10 text-gold text-[10px] rounded-lg flex items-start gap-3 tracking-widest leading-relaxed shadow-lg shadow-gold/5";
+          disclaimerEl.innerHTML = '<i class="ph-fill ph-warning-circle text-2xl mt-0.5"></i> <span><b class="uppercase text-white">Lưu ý:</b> Thông tin do A.I cung cấp có thể không chính xác 100%. Bạn cần đối chiếu lại với nhà sản xuất hoặc dùng công cụ từ khóa bên dưới để tự kiểm tra thêm.</span>';
+      }
+  }
+
+  const isU_Brand = !d.main_brand || d.main_brand === 'UNKNOWN' || d.main_brand.toLowerCase() === 'chưa xác định';
+  const isU_Name = !d.product_name || d.product_name === 'UNKNOWN' || d.product_name.toLowerCase() === 'chưa xác định';
+
+  const pt = getEl('res-product-type'); if(pt) pt.innerText = d.product_type || "SẢN PHẨM NỘI THẤT";
+  
+  const rb = getEl('res-brand');
+  if (rb) rb.innerHTML = isU_Brand ? `<span class="text-metal font-light text-sm italic">Chưa xác định hãng</span>` : d.main_brand;
+  
+  const pName = getEl('res-product-name');
+  if (pName) {
+      pName.innerText = isU_Name ? "CHƯA XÁC ĐỊNH MODEL" : d.product_name;
+      pName.className = isU_Name ? "text-sm text-metal italic tracking-wider uppercase" : "text-xl text-white font-black uppercase tracking-wide";
+  }
+
+  const des = d.designer&&!['UNKNOWN','NONE','Chưa xác định'].includes(d.designer) ? d.designer : '';
+  const desEl = getEl('res-designer'); if(desEl) desEl.innerText = des ? 'Thiết kế: ' + des : '';
+  
+  const exactL = getEl('res-exact-link');
+  if(exactL) {
+      if(!isU_Brand && d.homepage_link && d.homepage_link !== 'NONE' && d.homepage_link.startsWith('http')) { 
+          try { exactL.href = new URL(d.homepage_link).origin; } catch(e) { exactL.href = d.homepage_link; }
+          toggleHide('res-exact-link', false); 
+      } else { toggleHide('res-exact-link', true); }
+  }
+
+  const rs = getEl('res-style'); if (rs) rs.innerText = d.style || '—';
+  const lb = getEl('res-luxury-badge');
+  if (lb) {
+      lb.className = `inline-flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 border rounded ${d.is_luxury ? 'badge-gold' : 'badge-metal'}`;
+      lb.innerHTML = d.is_luxury ? '<i class="ph-fill ph-crown"></i> LUXURY' : '<i class="ph ph-x-circle"></i> BASIC';
+  }
+
+  const rScore = getEl('res-score'); if (rScore) rScore.innerText = d.score_total; 
+  
+  const rAes = getEl('res-aesthetic'); 
+  if (rAes) rAes.innerText = d.aesthetic_analysis || "Hệ thống đang cập nhật phân tích thẩm mỹ cho sản phẩm này.";
+
+  const metrics = [{label:'Hình khối',val:d.form_score,color:'#D4AF37'}, {label:'Tỉ lệ',val:d.proportion_score,color:'#F3E5AB'}, {label:'Màu sắc',val:d.color_score,color:'#888888'}, {label:'Chi tiết',val:d.detail_score,color:'#aaaaaa'}, {label:'Vật liệu',val:d.material_score,color:'#D4AF37'}, {label:'Luxury',val:d.luxury_index,color:'#F3E5AB'}];
+  const subs = getEl('sub-scores'); 
+  if (subs) {
+      subs.innerHTML = '';
+      metrics.forEach(m => { subs.innerHTML += `<div class="flex items-center gap-4 text-[9px] uppercase tracking-widest"><span class="w-16 text-metal font-bold">${m.label}</span><div class="flex-1 h-1 bg-border overflow-hidden"><div class="h-full" style="width:${(m.val||0)*10}%;background:${m.color}"></div></div><span class="w-4 text-right font-black text-white">${m.val||0}</span></div>`; });
+  }
+
+  toggleHide('search-toolkit', false);
+  const mainKwInput = getEl('main-keyword-text');
+  if (mainKwInput) mainKwInput.value = d.main_search_keyword || (d.product_type + " 3d model");
+
+  const plats = getEl('platform-links'); 
+  if (plats) {
+      plats.innerHTML = '';
+      const searchKw = encodeURIComponent(d.main_search_keyword || d.product_type);
+      [{name:'Google', color:'#D4AF37', icon:'google-logo', url:`https://www.google.com/search?tbm=isch&q=${searchKw}`}, {name:'3dsky', color:'#D4AF37', icon:'cube', url:`https://3dsky.org/search?query=${searchKw}`},{name:'Pinterest',color:'#D4AF37', icon:'pinterest-logo', url:`https://www.pinterest.com/search/pins/?q=${searchKw}`}].forEach(p => {
+          const a = document.createElement('a'); a.href = p.url; a.target='_blank'; a.className='platform-btn hover:bg-gold hover:text-black hover:border-gold'; a.style=`color:${p.color};border-color:rgba(212,175,55,0.3);background:rgba(212,175,55,0.05)`; a.innerHTML=`<i class="ph-bold ph-${p.icon} text-sm"></i> ${p.name}`; plats.appendChild(a);
+      });
+  }
+  
+  if(d.related_keywords?.length){ 
+      toggleHide('related-keywords-box', false); 
+      const rl = getEl('related-keywords-list'); 
+      if(rl) { 
+          rl.innerHTML = ''; 
+          d.related_keywords.forEach(k => { 
+              const safeK = k.replace(/'/g,"\\'");
+              rl.innerHTML += `<div class="flex items-center bg-dark border border-border pl-3 rounded overflow-hidden"><span class="text-[10px] text-white font-mono mr-2 uppercase tracking-wider">${k}</span><button onclick="safeCopyText('${safeK}',this)" class="px-4 py-2 bg-border text-metal hover:bg-gold hover:text-black transition-all text-[9px] font-bold uppercase tracking-widest flex items-center gap-1 border-l border-border"><i class="ph-bold ph-copy"></i> Copy</button></div>`; 
+          }); 
+      } 
+  } else toggleHide('related-keywords-box', true);
+  
+  const cb=getEl('confidence-badge');
+  if(cb) {
+      if(d._mode === 'lens') {
+          cb.className='text-[9px] px-3 py-1 rounded border border-gold/30 bg-gold/10 text-gold uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-high"></span>Advanced';
+      } else if (d._mode === 'text') {
+          cb.className='text-[9px] px-3 py-1 rounded border border-metal/30 bg-metal/10 text-metal uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-med"></span>Text Search';
+      } else {
+          cb.className='text-[9px] px-3 py-1 rounded border border-metal/30 bg-metal/10 text-metal uppercase tracking-widest'; cb.innerHTML='<span class="conf-dot conf-med"></span>Basic Mode';
+      }
+  }
+
+  toggleHide('radar-card', false);
+  setTimeout(() => {
+      drawRadar(metrics);
+      toggleAcc('acc-aesthetic','icon-aesthetic');
+  }, 150);
+}
+
+function drawRadar(m){
+  const cv=getEl('radarCanvas'); if(!cv) return;
+  const ctx=cv.getContext('2d'); const W=cv.width, H=cv.height, cx=W/2, cy=H/2+10, R=85, N=m.length;
+  ctx.clearRect(0,0,W,H); ctx.setLineDash([2, 4]); ctx.strokeStyle='rgba(255,255,255,0.05)';
+  [0.2,0.4,0.6,0.8,1.0].forEach(r=>{ctx.beginPath(); for(let i=0;i<N;i++){const a=Math.PI*2/N*i-Math.PI/2; ctx.lineTo(cx+Math.cos(a)*R*r, cy+Math.sin(a)*R*r);} ctx.closePath(); ctx.stroke();});
+  ctx.setLineDash([]); ctx.beginPath(); m.forEach((x,i)=>{const a=Math.PI*2/N*i-Math.PI/2, v=(x.val||0)/10; i===0?ctx.moveTo(cx+Math.cos(a)*R*v,cy+Math.sin(a)*R*v):ctx.lineTo(cx+Math.cos(a)*R*v,cy+Math.sin(a)*R*v);});
+  ctx.closePath(); ctx.fillStyle='rgba(212,175,55,0.15)'; ctx.fill(); ctx.strokeStyle='#D4AF37'; ctx.lineWidth=2; ctx.stroke();
+  m.forEach((x,i)=>{const a=Math.PI*2/N*i-Math.PI/2, v=(x.val||0)/10; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*R*v, cy+Math.sin(a)*R*v, 3, 0, Math.PI*2); ctx.fillStyle=x.color; ctx.fill(); ctx.font='9px Inter'; ctx.fillStyle='#888'; ctx.textAlign='center'; ctx.fillText(x.label, cx+Math.cos(a)*(R+20), cy+Math.sin(a)*(R+20));});
+}
+
+function toggleAcc(id,iId){
+  const e=getEl(id), i=getEl(iId);
+  if(e && i) {
+      if(e.classList.contains('open')){ e.style.maxHeight='0'; e.classList.remove('open'); i.classList.remove('rotate-180'); }
+      else { e.style.maxHeight=e.scrollHeight+'px'; e.classList.add('open'); i.classList.add('rotate-180'); }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { 
+    setMode(currentMode); 
+    getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || '';
+    getEl('cfg-serp').value = localStorage.getItem('serp_key') || '';
+    getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || '';
+});
+
+function resetSystem() { 
+    cancelSearch();
+    toggleHide('upload-zone', false); toggleHide('preview-zone', true); 
+    toggleHide('empty-state', false); toggleHide('loading-state', true); toggleHide('results-state', true); 
+    toggleHide('ready-state', true); toggleHide('radar-card', true);
+    const f = getEl('file-upload'); if(f) f.value=''; currentImageB64=''; 
+    const iSearch = getEl('text-search-input'); if(iSearch) iSearch.value = '';
+}
+function resetAll() { location.reload(); }
+function openSettings() { 
+    const m = getEl('settings-modal'), b = getEl('settings-box'); 
+    getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || '';
+    getEl('cfg-serp').value = localStorage.getItem('serp_key') || '';
+    getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || '';
+    if(m) { m.classList.remove('hidden'); setTimeout(()=>{ m.classList.remove('opacity-0'); b?.classList.remove('scale-95'); },10); } 
+}
+function closeSettings() { 
+    const m = getEl('settings-modal'), b = getEl('settings-box'); 
+    if(m) { m.classList.add('opacity-0'); b?.classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),300); } 
+}
+function saveSettings() {
+    localStorage.setItem('imgbb_key', getEl('cfg-imgbb')?.value.trim() || '');
+    localStorage.setItem('serp_key', getEl('cfg-serp')?.value.trim() || '');
+    localStorage.setItem('gemini_key', getEl('cfg-gemini')?.value.trim() || '');
+    closeSettings();
+}
+</script>
+</body>
+</html>
