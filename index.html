@@ -441,6 +441,21 @@ async function startTextSearch() {
     }
 }
 
+function parseJSON(r) { 
+    if(r.error) throw new Error("Lỗi Gemini API: " + (r.error.message || "Key không hợp lệ."));
+    if(!r.candidates || !r.candidates[0]) {
+        if (r.promptFeedback?.blockReason) throw new Error("Bị chặn bởi bộ lọc an toàn: " + r.promptFeedback.blockReason);
+        throw new Error("Lỗi xác thực. Vui lòng kiểm tra lại API Key Gemini của bạn trong Cài đặt.");
+    }
+    const cand = r.candidates[0];
+    if(!cand.content || !cand.content.parts || !cand.content.parts[0]) throw new Error("Dữ liệu AI rỗng.");
+    const t = cand.content.parts.map(p=>p.text).join(''); 
+    const s = t.indexOf('{'), e = t.lastIndexOf('}');
+    if(s === -1 || e === -1) throw new Error("Dữ liệu AI không đúng định dạng JSON.");
+    try { return JSON.parse(t.slice(s, e+1).replace(/[\x00-\x1F\x7F]/g,' ').replace(/,(\s*[}\]])/g,'$1')); } 
+    catch(err) { throw new Error("Lỗi phân tích JSON: " + err.message); }
+}
+
 let cropper = null;
 let originalImageB64 = "";
 let currentImageB64 = "";
@@ -593,8 +608,6 @@ Trả JSON: ${jsonSchema}`;
     else { const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; }
   }
 }
-
-function parseJSON(r){ const t = r.candidates[0].content.parts.map(p=>p.text).join(''); return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}')+1)); }
 
 function showReadyState() {
   toggleHide('upload-zone', true); toggleHide('preview-zone', false);
