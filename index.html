@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Luxury Asset Curator V5.3 - Pro Edition</title>
+<title>AI Luxury Asset Curator V5.4 - Pro Edition</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
@@ -108,8 +108,9 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <button onclick="setMode('basic')" id="btn-mode-basic" class="relative z-10 w-[80px] text-[10px] font-bold text-white py-2 uppercase tracking-widest outline-none">Basic</button>
         <button onclick="setMode('lens')" id="btn-mode-lens" class="relative z-10 w-[80px] text-[10px] font-bold text-metal py-2 uppercase tracking-widest outline-none">Advanced</button>
     </div>
-    <button onclick="openSettings()" class="flex items-center gap-2 bg-dark border border-border hover:border-gold px-4 h-10 rounded-lg text-xs font-bold text-metal hover:text-gold uppercase tracking-widest transition-all shadow-sm">
+    <button onclick="openSettings()" id="btn-api-keys" class="flex items-center gap-2 bg-dark border border-border hover:border-gold px-4 h-10 rounded-lg text-xs font-bold text-metal hover:text-gold uppercase tracking-widest transition-all shadow-sm">
       <i class="ph-fill ph-key text-lg"></i> API KEYS
+      <span id="key-status-dot" class="w-2 h-2 rounded-full bg-danger shadow-[0_0_6px_rgba(239,68,68,0.8)]"></span>
     </button>
     <button onclick="resetAll()" class="flex items-center gap-2 bg-dark border border-border rounded-lg hover:border-danger/50 px-5 h-10 text-xs font-bold text-metal hover:text-danger uppercase tracking-widest transition-all shadow-sm">
       <i class="ph ph-trash"></i> Clear
@@ -150,12 +151,12 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <i class="ph-bold ph-aperture text-gold"></i> <span id="file-name-display">image.jpg</span>
       </div>
       <div class="relative h-full bg-dark flex items-center justify-center p-4">
-        <!-- Placeholder cho trường hợp không có ảnh hoặc ảnh lỗi -->
+        <!-- ĐÃ FIX: Xóa src rỗng và xóa onerror inline để không bị lỗi ReferenceError lúc tải trang -->
         <div id="preview-placeholder" class="hidden flex-col items-center justify-center text-metal">
             <i class="ph-light ph-image-broken text-5xl mb-2 opacity-30"></i>
             <span class="text-[10px] uppercase tracking-widest font-bold opacity-50">Không tải được ảnh</span>
         </div>
-        <img id="preview-image" src="" alt="preview" class="max-w-full max-h-full object-contain" onerror="handleImageError(this)">
+        <img id="preview-image" alt="preview" class="max-w-full max-h-full object-contain hidden">
         <div id="scan-line" class="scan-line"></div>
       </div>
     </div>
@@ -181,11 +182,11 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <div id="suggestion-content" class="hidden flex-col gap-6">
             <div class="bg-panel border border-border rounded-xl p-5 shadow-lg">
                 <h3 class="text-[10px] font-bold text-gold uppercase tracking-widest mb-4 flex items-center gap-2"><i class="ph-fill ph-buildings"></i> Sản phẩm cùng hãng</h3>
-                <div id="suggest-brand-list" class="flex gap-4 overflow-x-auto pb-2 snap-x scroll-smooth"></div>
+                <div id="suggest-brand-list" class="flex gap-4 overflow-x-auto pb-4 pt-2 px-1 snap-x scroll-smooth"></div>
             </div>
             <div class="bg-panel border border-border rounded-xl p-5 shadow-lg">
                 <h3 class="text-[10px] font-bold text-gold uppercase tracking-widest mb-4 flex items-center gap-2"><i class="ph-fill ph-magic-wand"></i> Sản phẩm cùng loại</h3>
-                <div id="suggest-type-list" class="flex gap-4 overflow-x-auto pb-2 snap-x scroll-smooth"></div>
+                <div id="suggest-type-list" class="flex gap-4 overflow-x-auto pb-4 pt-2 px-1 snap-x scroll-smooth"></div>
             </div>
         </div>
     </div>
@@ -227,12 +228,19 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <div class="w-8 h-px bg-border"></div>
         <div class="flex items-center gap-1.5"><div class="step-dot" id="s3-dot"></div><span class="step-lbl" id="s3-lbl">AI Core</span></div>
       </div>
-      <button onclick="cancelSearch()" class="px-6 py-2.5 rounded-lg text-[10px] border border-danger/30 text-danger hover:bg-danger/10 uppercase tracking-widest transition-colors flex items-center gap-2 font-bold">
-          <i class="ph-bold ph-stop-circle text-sm"></i> Ngắt tiến trình
-      </button>
+
+      <div class="flex gap-4">
+          <button id="btn-cancel-search" onclick="cancelSearch()" class="px-6 py-2.5 rounded-lg text-[10px] border border-danger/30 text-danger hover:bg-danger/10 uppercase tracking-widest transition-colors flex items-center gap-2 font-bold">
+              <i class="ph-bold ph-pause-circle text-sm"></i> Tạm dừng
+          </button>
+          <button id="btn-resume-search" onclick="resumeSearch()" class="hidden px-6 py-2.5 rounded-lg text-[10px] border border-gold/30 text-gold hover:bg-gold/10 uppercase tracking-widest transition-colors flex items-center gap-2 font-bold">
+              <i class="ph-bold ph-play-circle text-sm"></i> Tiếp tục
+          </button>
+      </div>
       <p id="error-text" class="text-xs text-danger mt-6 hidden text-center max-w-xs font-mono leading-relaxed"></p>
     </div>
 
+    <!-- RESULTS STATE -->
     <div id="results-state" class="hidden absolute inset-0 bg-panel z-20 overflow-y-auto p-6 pb-12">
       <div class="flex items-center justify-between mb-6 pb-4 border-b border-border">
         <span class="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-gold shadow-[0_0_8px_rgba(212,175,55,0.8)]"></div> Báo cáo định danh</span>
@@ -306,17 +314,11 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
 function getEl(id) { return document.getElementById(id); }
 function toggleHide(id, hide) { const el = getEl(id); if(el) { if(hide) el.classList.add('hidden'); else el.classList.remove('hidden'); } }
 
-// FIX LỖI ẨN ẢNH: Reset hiển thị ảnh mỗi khi nạp ảnh mới
 function resetImagePreviewUI() {
     const pImg = getEl('preview-image');
     const pPlaceholder = getEl('preview-placeholder');
     if (pImg) { pImg.classList.remove('hidden'); pImg.style.display = 'block'; }
     if (pPlaceholder) pPlaceholder.classList.add('hidden');
-}
-
-function handleImageError(img) {
-    img.classList.add('hidden');
-    getEl('preview-placeholder').classList.remove('hidden');
 }
 
 window.safeCopyText = function(text, btn) {
@@ -340,20 +342,39 @@ window.safeCopyText = function(text, btn) {
             btn.classList.remove('bg-success', 'border-success');
             btn.classList.add('text-metal', 'bg-border', 'hover:bg-gold');
         }, 1500);
-    } catch (err) { console.error('Copy failed', err); }
+    } catch (err) {
+        console.error('Copy failed', err);
+    }
     document.body.removeChild(textArea);
 };
 
 let searchAbortController = null;
+let lastSearch = { type: null, data: null };
+
 function cancelSearch() {
     if (searchAbortController) {
         searchAbortController.abort(); searchAbortController = null;
         const sl = getEl('scan-line'); if (sl) sl.style.display = 'none';
-        const lt = getEl('loading-text'); if (lt) lt.innerText = 'Đã hủy lệnh!';
+        const lt = getEl('loading-text'); if (lt) lt.innerText = 'Đã tạm dừng tiến trình!';
+        toggleHide('btn-cancel-search', true);
+        toggleHide('btn-resume-search', false);
     }
 }
 
-let currentMode = localStorage.getItem('search_mode') || 'lens';
+function resumeSearch() {
+    toggleHide('error-text', true);
+    if (lastSearch.type === 'text') {
+        const inputEl = getEl('text-search-input');
+        if(inputEl) inputEl.value = lastSearch.data;
+        startTextSearch();
+    } else if (lastSearch.type === 'image') {
+        analyseImage(lastSearch.data);
+    } else if (lastSearch.type === 'suggest') {
+        analyzeFromSuggestUrl(lastSearch.data.url, lastSearch.data.title);
+    }
+}
+
+let currentMode = localStorage.getItem('search_mode') || 'basic';
 function setMode(mode) {
     currentMode = mode; localStorage.setItem('search_mode', mode);
     const bg = getEl('mode-bg'), btnB = getEl('btn-mode-basic'), btnL = getEl('btn-mode-lens');
@@ -393,17 +414,17 @@ const jsonSchema = `{"product_type": "BẮT BUỘC GHI: Sofa, Armchair, Dining C
 
 function isApiKeyReady() {
     const geminiKey = localStorage.getItem('gemini_key');
-    const imgKey = localStorage.getItem('imgbb_key');
-    const serpKey = localStorage.getItem('serp_key');
-    if (!geminiKey && window.location.hostname !== 'localhost') {
-        alert("Lỗi: Yêu cầu nhập Gemini API Key để AI hoạt động!\nVui lòng nhấp vào nút API KEYS để cài đặt.");
+    if (!geminiKey) {
         openSettings();
         return false;
     }
-    if (currentMode === 'lens' && (!imgKey || !serpKey)) {
-        alert("Lỗi: Chế độ Advanced yêu cầu nhập API Key của ImgBB và SerpApi!\nVui lòng nhấp vào nút API KEYS để cài đặt.");
-        openSettings();
-        return false;
+    if (currentMode === 'lens') {
+        const imgKey = localStorage.getItem('imgbb_key');
+        const serpKey = localStorage.getItem('serp_key');
+        if (!imgKey || !serpKey) {
+            openSettings();
+            return false;
+        }
     }
     return true;
 }
@@ -419,8 +440,13 @@ async function startTextSearch() {
     if(!query) return;
     if (!isApiKeyReady()) return;
 
-    cancelSearch(); searchAbortController = new AbortController(); const signal = searchAbortController.signal;
+    if (searchAbortController) { searchAbortController.abort(); searchAbortController = null; }
+    searchAbortController = new AbortController(); const signal = searchAbortController.signal;
     const serpKey = localStorage.getItem('serp_key');
+    
+    lastSearch = { type: 'text', data: query };
+    toggleHide('btn-cancel-search', false);
+    toggleHide('btn-resume-search', true);
 
     toggleHide('upload-zone', true); toggleHide('preview-zone', false);
     toggleHide('empty-state', true); toggleHide('ready-state', true);
@@ -432,8 +458,7 @@ async function startTextSearch() {
 
     try {
         const gemKey = localStorage.getItem('gemini_key') || "";
-        const modelToUse = gemKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
-        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${gemKey}`;
+        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gemKey}`;
         const lt = getEl('loading-text');
         
         stepActive(1);
@@ -461,8 +486,11 @@ async function startTextSearch() {
         stepDone(3);
         render(d3);
     } catch(err) {
-        if(err.name === 'AbortError') { resetSystem(); }
-        else { const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; }
+        if(err.name !== 'AbortError') { 
+            const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); 
+            const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; 
+            toggleHide('btn-cancel-search', true); toggleHide('btn-resume-search', false);
+        }
     }
 }
 
@@ -515,7 +543,7 @@ document.addEventListener('paste', e => { if(['INPUT','TEXTAREA'].includes(e.tar
 
 function handleFile(file){
   if(!file.type.startsWith('image/')) return;
-  cancelSearch();
+  if (searchAbortController) { searchAbortController.abort(); searchAbortController = null; }
   const fInp = getEl('file-name-display'); if(fInp) fInp.innerText = file.name;
   currentFileName = file.name;
   const reader = new FileReader();
@@ -541,8 +569,14 @@ function stepReset(n){ getEl(`s${n}-dot`)?.style.setProperty('background', '#333
 function startAnalysis() { if (!isApiKeyReady()) return; if (currentImageB64) analyseImage(currentImageB64); }
 
 async function analyseImage(b64){
-  cancelSearch(); searchAbortController = new AbortController(); const signal = searchAbortController.signal;
+  if (searchAbortController) { searchAbortController.abort(); searchAbortController = null; }
+  searchAbortController = new AbortController(); const signal = searchAbortController.signal;
   const imgKey = localStorage.getItem('imgbb_key'), serpKey = localStorage.getItem('serp_key');
+  
+  lastSearch = { type: 'image', data: b64 };
+  toggleHide('btn-cancel-search', false);
+  toggleHide('btn-resume-search', true);
+
   toggleHide('upload-zone', true); toggleHide('preview-zone', false);
   toggleHide('empty-state', true); toggleHide('ready-state', true);
   toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true);
@@ -552,8 +586,7 @@ async function analyseImage(b64){
   [1,2,3].forEach(stepReset);
   try {
     const gemKey = localStorage.getItem('gemini_key') || "";
-    const modelToUse = gemKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
-    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${gemKey}`;
+    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gemKey}`;
     let d3 = null;
     if (currentMode === 'lens') {
         const lt = getEl('loading-text'); stepActive(1); if (lt) lt.innerText = 'Đang trích xuất hình ảnh...';
@@ -576,7 +609,13 @@ async function analyseImage(b64){
         d3 = parseJSON(await r3.json()); d3._mode = 'guess'; stepDone(1); stepDone(2); stepDone(3);
     }
     render(d3);
-  } catch(err) { if(err.name === 'AbortError') { resetSystem(); } else { const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; } }
+  } catch(err) { 
+      if(err.name !== 'AbortError') { 
+          const et = getEl('error-text'); if (et) et.innerText = err.message; toggleHide('error-text', false); 
+          const sl2 = getEl('scan-line'); if (sl2) sl2.style.display='none'; 
+          toggleHide('btn-cancel-search', true); toggleHide('btn-resume-search', false);
+      } 
+  }
 }
 
 function showReadyState() {
@@ -627,27 +666,65 @@ async function fetchSuggestions(brand, type) {
     const brandList = getEl('suggest-brand-list'), typeList = getEl('suggest-type-list');
     brandList.innerHTML = typeList.innerHTML = '<div class="w-full h-20 flex items-center justify-center"><div class="w-5 h-5 border-2 border-border border-t-gold rounded-full animate-spin"></div></div>';
     toggleHide('suggestions-zone', false);
+    // Tạo controller riêng cho suggestions, không phụ thuộc searchAbortController
+    const suggestController = new AbortController();
     try {
-        let q1 = brand && brand !== 'UNKNOWN' && brand !== 'Chưa xác định' ? `${brand} furniture 3d model` : `luxury furniture design`;
-        let q2 = type && type !== 'UNKNOWN' && type !== 'Chưa xác định' ? `luxury modern ${type} 3d model` : `luxury modern interior design`;
-        const [res1, res2] = await Promise.all([ fetchSerpApi(`https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(q1)}&api_key=${serpKey}`, searchAbortController.signal).catch(()=>null), fetchSerpApi(`https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(q2)}&api_key=${serpKey}`, searchAbortController.signal).catch(()=>null) ]);
+        let q1 = brand && brand !== 'UNKNOWN' && brand !== 'Chưa xác định' ? `${brand} furniture showroom real photo` : `luxury furniture showroom interior design`;
+        let q2 = type && type !== 'UNKNOWN' && type !== 'Chưa xác định' ? `luxury modern ${type} interior design photorealistic` : `luxury modern interior design photorealistic`;
+        
+        const [res1, res2] = await Promise.all([
+            fetchSerpApi(`https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(q1)}&api_key=${serpKey}`, suggestController.signal).catch(()=>null),
+            fetchSerpApi(`https://serpapi.com/search.json?engine=google_images&q=${encodeURIComponent(q2)}&api_key=${serpKey}`, suggestController.signal).catch(()=>null)
+        ]);
         renderSuggestRow(brandList, res1?.images_results); renderSuggestRow(typeList, res2?.images_results);
     } catch (e) { brandList.innerHTML = typeList.innerHTML = '<p class="text-[9px] text-danger italic">Lỗi mạng.</p>'; }
 }
 
+// FIX TRÁNH LỖI NGOẶC VÀ NHÁY ĐƠN KHI VẼ HTML (BUG FIX)
 function renderSuggestRow(container, images) {
-    if(!images || images.length === 0) { container.innerHTML = '<p class="text-[9px] text-metal italic">Không có dữ liệu</p>'; return; }
+    if(!images || images.length === 0) { container.innerHTML = '<p class="text-[9px] text-metal italic px-4">Không có dữ liệu</p>'; return; }
     container.innerHTML = '';
     const items = images.sort(() => 0.5 - Math.random()).slice(0, 10);
+    
     items.forEach(item => {
-        const safeTitle = (item.title || "Sản phẩm").replace(/'/g, "").replace(/"/g, "");
-        container.innerHTML += `<div onclick="analyzeFromSuggestUrl('${item.original}', '${safeTitle}')" class="w-[110px] min-w-[110px] flex-shrink-0 cursor-pointer group snap-start"><div class="w-full h-[110px] bg-dark rounded-lg overflow-hidden border border-border group-hover:border-gold transition-colors mb-2 relative"><div class="absolute inset-0 bg-gold/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"><i class="ph-bold ph-scan text-gold text-2xl"></i></div><img src="${item.thumbnail}" class="w-full h-full object-cover mix-blend-luminosity opacity-70 group-hover:opacity-100 transition-all"></div><p class="text-[9px] text-metal group-hover:text-white truncate font-bold uppercase tracking-wider">${safeTitle}</p></div>`;
+        const safeTitle = item.title || "Sản phẩm";
+        
+        // Sử dụng Document Object thay vì nối chuỗi string (Bảo mật 100% không gãy Code)
+        const wrapper = document.createElement('div');
+        wrapper.className = "w-[140px] min-w-[140px] flex-shrink-0 cursor-pointer group snap-start";
+        wrapper.onclick = () => analyzeFromSuggestUrl(item.original, safeTitle);
+        
+        // BỔ SUNG BADGE CẢNH BÁO TỐN API KEY KHI RƠ CHUỘT
+        wrapper.innerHTML = `
+            <div class="w-full h-[140px] bg-dark rounded-xl overflow-hidden border border-border group-hover:border-gold/50 shadow-lg group-hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all duration-300 relative">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 pointer-events-none"></div>
+                
+                <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                    <div class="w-10 h-10 rounded-full bg-black/70 backdrop-blur-md border border-gold/50 flex items-center justify-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 shadow-[0_0_15px_rgba(212,175,55,0.4)]">
+                        <i class="ph-bold ph-scan text-gold text-lg"></i>
+                    </div>
+                    <span class="mt-2 text-[8px] text-white bg-danger/90 px-2 py-0.5 rounded font-bold uppercase tracking-widest transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75 border border-danger shadow-lg">Tốn 1 API Key</span>
+                </div>
+
+                <img src="${item.thumbnail}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-out" alt="Suggest">
+                <div class="absolute bottom-0 left-0 right-0 p-3 z-20 pointer-events-none">
+                    <p class="text-[9px] text-gray-300 group-hover:text-gold truncate font-bold uppercase tracking-wider drop-shadow-md transition-colors">${safeTitle.replace(/</g, "&lt;")}</p>
+                </div>
+            </div>`;
+            
+        container.appendChild(wrapper);
     });
 }
 
 async function analyzeFromSuggestUrl(imgUrl, title) {
     if (!isApiKeyReady()) return; window.scrollTo({ top: 0, behavior: 'smooth' });
-    cancelSearch(); searchAbortController = new AbortController();
+    if (searchAbortController) { searchAbortController.abort(); searchAbortController = null; }
+    searchAbortController = new AbortController();
+    
+    lastSearch = { type: 'suggest', data: { url: imgUrl, title: title } };
+    toggleHide('btn-cancel-search', false);
+    toggleHide('btn-resume-search', true);
+    
     toggleHide('upload-zone', true); toggleHide('preview-zone', false); toggleHide('empty-state', true); toggleHide('ready-state', true); toggleHide('loading-state', false); toggleHide('results-state', true); toggleHide('error-text', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true);
     resetImagePreviewUI();
     getEl('loading-text').innerText = 'Đang kéo ảnh về...'; getEl('file-name-display').innerText = `[SUGGEST] ${title.substring(0, 15)}...`;
@@ -657,7 +734,12 @@ async function analyzeFromSuggestUrl(imgUrl, title) {
         const reader = new FileReader();
         reader.onloadend = function() { currentImageB64 = reader.result.split(',')[1]; getEl('preview-image').src = reader.result; analyseImage(currentImageB64); }
         reader.readAsDataURL(blob);
-    } catch(e) { if(e.name !== 'AbortError') { toggleHide('error-text', false); getEl('error-text').innerText = "Trang web chặn quyền tải ảnh."; } }
+    } catch(e) { 
+        if(e.name !== 'AbortError') { 
+            toggleHide('error-text', false); getEl('error-text').innerText = "Trang web chặn quyền tải ảnh."; 
+            toggleHide('btn-cancel-search', true); toggleHide('btn-resume-search', false);
+        } 
+    }
 }
 
 function drawRadar(m){
@@ -680,7 +762,23 @@ document.addEventListener('DOMContentLoaded', () => {
     getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || '';
     getEl('cfg-serp').value = localStorage.getItem('serp_key') || '';
     getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || '';
+    updateKeyStatusDot();
     initTypewriter();
+    
+    // Tự mở settings nếu lần đầu dùng (chưa có key Gemini)
+    if (!localStorage.getItem('gemini_key')) {
+        setTimeout(() => openSettings(), 800);
+    }
+    
+    // GẮN SỰ KIỆN LỖI ẢNH ĐỘNG ĐỂ KHÔNG BỊ REFERENCE ERROR (BUG FIX)
+    const pImg = getEl('preview-image');
+    if (pImg) {
+        pImg.onerror = function() {
+            this.classList.add('hidden');
+            const placeholder = getEl('preview-placeholder');
+            if (placeholder) placeholder.classList.remove('hidden');
+        };
+    }
 });
 
 function initTypewriter() {
@@ -708,11 +806,54 @@ function initTypewriter() {
     setTimeout(type, 1000); 
 }
 
-function resetSystem() { cancelSearch(); toggleHide('upload-zone', false); toggleHide('preview-zone', true); toggleHide('empty-state', false); toggleHide('loading-state', true); toggleHide('results-state', true); toggleHide('ready-state', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true); const f = getEl('file-upload'); if(f) f.value=''; currentImageB64=''; getEl('text-search-input').value = ''; }
+function updateKeyStatusDot() {
+    const dot = getEl('key-status-dot');
+    if (!dot) return;
+    const hasGemini = !!localStorage.getItem('gemini_key');
+    if (hasGemini) {
+        dot.className = 'w-2 h-2 rounded-full bg-success shadow-[0_0_6px_rgba(16,185,129,0.8)]';
+    } else {
+        dot.className = 'w-2 h-2 rounded-full bg-danger shadow-[0_0_6px_rgba(239,68,68,0.8)]';
+    }
+}
+
+function showToast(msg, isError = false) {
+    let toast = getEl('app-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'app-toast';
+        toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#161616;border:1px solid rgba(212,175,55,0.3);color:#e5e5e8;padding:10px 20px;border-radius:8px;font-size:12px;z-index:300;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;font-weight:600;letter-spacing:.05em;text-transform:uppercase;';
+        document.body.appendChild(toast);
+    }
+    toast.innerText = msg;
+    toast.style.borderColor = isError ? 'rgba(239,68,68,0.4)' : 'rgba(212,175,55,0.3)';
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(-50%) translateY(20px)'; }, 2500);
+}
+
+function resetSystem() { 
+    if (searchAbortController) { searchAbortController.abort(); searchAbortController = null; }
+    toggleHide('upload-zone', false); toggleHide('preview-zone', true); 
+    toggleHide('empty-state', false); toggleHide('loading-state', true); toggleHide('results-state', true); 
+    toggleHide('ready-state', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true); 
+    const f = getEl('file-upload'); if(f) f.value=''; currentImageB64=''; getEl('text-search-input').value = ''; 
+}
 function resetAll() { location.reload(); }
 function openSettings() { const m = getEl('settings-modal'), b = getEl('settings-box'); getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || ''; getEl('cfg-serp').value = localStorage.getItem('serp_key') || ''; getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || ''; if(m) { m.classList.remove('hidden'); setTimeout(()=>{ m.classList.remove('opacity-0'); b?.classList.remove('scale-95'); },10); } }
 function closeSettings() { const m = getEl('settings-modal'), b = getEl('settings-box'); if(m) { m.classList.add('opacity-0'); b?.classList.add('scale-95'); setTimeout(()=>m.classList.add('hidden'),300); } }
-function saveSettings() { localStorage.setItem('imgbb_key', getEl('cfg-imgbb')?.value.trim() || ''); localStorage.setItem('serp_key', getEl('cfg-serp')?.value.trim() || ''); localStorage.setItem('gemini_key', getEl('cfg-gemini')?.value.trim() || ''); closeSettings(); }
+function saveSettings() { 
+    const gemVal = getEl('cfg-gemini')?.value.trim() || '';
+    const imgVal = getEl('cfg-imgbb')?.value.trim() || '';
+    const serpVal = getEl('cfg-serp')?.value.trim() || '';
+    localStorage.setItem('imgbb_key', imgVal); 
+    localStorage.setItem('serp_key', serpVal); 
+    localStorage.setItem('gemini_key', gemVal); 
+    updateKeyStatusDot();
+    closeSettings(); 
+    if (!gemVal) { showToast('⚠ Chưa nhập Gemini Key!', true); }
+    else { showToast('✓ Đã lưu cấu hình API Keys'); }
+}
 </script>
 </body>
 </html>
