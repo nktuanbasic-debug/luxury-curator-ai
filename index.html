@@ -458,7 +458,7 @@ async function startTextSearch() {
 
     try {
         const gemKey = localStorage.getItem('gemini_key') || "";
-        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gemKey}`;
+        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gemKey}`;
         const lt = getEl('loading-text');
         
         stepActive(1);
@@ -586,7 +586,7 @@ async function analyseImage(b64){
   [1,2,3].forEach(stepReset);
   try {
     const gemKey = localStorage.getItem('gemini_key') || "";
-    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${gemKey}`;
+    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gemKey}`;
     let d3 = null;
     if (currentMode === 'lens') {
         const lt = getEl('loading-text'); stepActive(1); if (lt) lt.innerText = 'Đang trích xuất hình ảnh...';
