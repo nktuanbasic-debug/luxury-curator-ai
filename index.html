@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Luxury Asset Curator V5.4 - Pro Edition</title>
+<title>AI Luxury Asset Curator V6.0 - Auto Fallback Edition</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
@@ -151,7 +151,6 @@ body{background:#050505;color:#e5e5e8;font-family:'Inter',system-ui,sans-serif}
         <i class="ph-bold ph-aperture text-gold"></i> <span id="file-name-display">image.jpg</span>
       </div>
       <div class="relative h-full bg-dark flex items-center justify-center p-4">
-        <!-- ĐÃ FIX: Xóa src rỗng và xóa onerror inline để không bị lỗi ReferenceError lúc tải trang -->
         <div id="preview-placeholder" class="hidden flex-col items-center justify-center text-metal">
             <i class="ph-light ph-image-broken text-5xl mb-2 opacity-30"></i>
             <span class="text-[10px] uppercase tracking-widest font-bold opacity-50">Không tải được ảnh</span>
@@ -410,7 +409,79 @@ async function fetchSerpApi(targetUrl, signal) {
     throw new Error(lastErr?.message || "Cầu nối mạng bị quá tải. Vui lòng thử lại sau.");
 }
 
-const jsonSchema = `{"product_type": "BẮT BUỘC GHI: Sofa, Armchair, Dining Chair, Bed, Table...", "main_brand": "Tên thương hiệu. Nếu không rõ, ghi 'Chưa xác định'", "product_name": "Tên Model. Nếu không rõ, ghi 'Chưa xác định'", "homepage_link": "Link trang web gốc của hãng (ví dụ: https://www.fendicasa.com) hoặc NONE", "designer": "Tên tác giả hoặc 'Chưa xác định'", "main_search_keyword": "TỪ KHÓA CHÍNH (TỐI ĐA 1 ĐẾN 4 TỪ). Nếu có Hãng+Model thì ghép lại. Nếu không có, CHỈ GHI loại đồ + chất liệu (vd: tiger print sofa). CẤM VIẾT CÂU DÀI.", "related_keywords": ["keyword 1", "keyword 2", "keyword 3"], "style": "...", "is_luxury": true, "score_total": 8.5, "form_score": 8, "proportion_score": 8, "color_score": 8, "detail_score": 8, "material_score": 8, "luxury_index": 8, "match_status": "GHI ĐÚNG 1 TRONG 2 CHỮ: 'EXACT' (tự tin 100%), hoặc 'GUESS' (suy đoán)", "aesthetic_analysis": "Góc nhìn chuyên gia cực kỳ khắt khe: Soi lỗi, chê bai những điểm chưa được về hình khối/vật liệu. Đừng khen ngợi thảo mai trừ khi nó thực sự hoàn hảo (3-4 câu)"}`;
+// ══════════════════════════════════════════════════════════════════════
+// 🚀 HỆ THỐNG THÁC NƯỚC: AUTO-FALLBACK & GEMMA INTEGRATION
+// ══════════════════════════════════════════════════════════════════════
+const aiModels = [
+    { id: "gemini-3-flash",        label: "3.0 Flash" }, // Chạy đầu tiên, ưu tiên độ khôn
+    { id: "gemini-2.5-flash",      label: "2.5 Flash" }, // Hết 3.0 thì nhảy qua 2.5
+    { id: "gemini-3.1-flash-lite", label: "3.1 Lite" },  // Hết 2.5 thì chui vào mỏ vàng
+    { id: "gemma-4-27b",           label: "Gemma 4" },   // Hết sạch Gemini thì tắt ảnh, gọi Gemma
+    { id: "gemma-3-27b",           label: "Gemma 3" },   // Hết Gemma 4 thì qua bản 3 xài xả láng
+    // --- PHAO CỨU SINH (Đáy xã hội, phòng khi Google lỗi toàn bộ server mới phải dùng đến) ---
+    { id: "gemini-1.5-flash",      label: "1.5 Flash (Backup)" }
+];
+
+async function executeAiWithFallback(gemKey, promptText, imageB64, signal) {
+    let errorDetails = [];
+    
+    // Vòng lặp test từng model một từ trên xuống dưới (Theo đúng thứ tự sếp cấp)
+    for (const model of aiModels) {
+        try {
+            const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model.id}:generateContent?key=${gemKey}`;
+            let parts = [{ text: promptText }];
+            
+            // Xử lý Gemma: "Tắt chức năng ảnh, gọi Gemma đọc chữ"
+            const isGemma = model.id.includes('gemma');
+            if (imageB64 && !isGemma) {
+                parts.push({ inlineData: { mimeType: 'image/jpeg', data: imageB64 } });
+            }
+            
+            const body = JSON.stringify({ contents: [{ role: 'user', parts: parts }] });
+            
+            const res = await fetch(gemUrl, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body, 
+                signal 
+            });
+            const data = await res.json();
+            
+            // Nếu Google trả về lỗi (429 Hết lượt, 404 Chưa mở, 403 Bị chặn)
+            if (data.error) {
+                console.warn(`[Auto-Fallback] Model ${model.id} TẠCH (${data.error.code}). Chuyển sang model tiếp theo...`);
+                errorDetails.push(`${model.label}(${data.error.code})`);
+                continue; // Lệnh 'continue' này sẽ LẬP TỨC ĐẨY QUY TRÌNH XUỐNG MODEL TIẾP THEO
+            }
+            
+            // THÀNH CÔNG: Cập nhật Badge hiển thị Model nào đang gánh team
+            updateModelBadge(model.label + (isGemma ? " (Text Only)" : ""));
+            return data; // Chạy ngon thì trả kết quả luôn, kết thúc vòng lặp
+            
+        } catch (err) {
+            if (err.name === 'AbortError') throw err; // Nếu người dùng bấm Ngắt tiến trình
+            console.warn(`[Auto-Fallback] ${model.id} lỗi mạng:`, err);
+            errorDetails.push(`${model.label}(NetError)`);
+        }
+    }
+    
+    // Nếu chạy hết sạch list mà vẫn tạch, in rõ nguyên nhân
+    throw new Error(`AI sập toàn tập. Lịch sử bị từ chối: ${errorDetails.join(" -> ")}`);
+}
+
+function updateModelBadge(label) {
+    let badge = document.getElementById('model-badge');
+    if (!badge) {
+        badge = document.createElement('span');
+        badge.id = 'model-badge';
+        badge.style.cssText = 'font-size:9px;padding:2px 8px;border-radius:4px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);color:#D4AF37;font-weight:700;letter-spacing:.05em;text-transform:uppercase;';
+        const btnApiKeys = document.getElementById('btn-api-keys');
+        if (btnApiKeys) btnApiKeys.parentNode.insertBefore(badge, btnApiKeys);
+    }
+    badge.innerText = '⚡ ' + label;
+}
+
+const jsonSchema = `{"product_type": "BẮT BUỘC GHI: Sofa, Armchair, Dining Chair, Bed, Table...", "main_brand": "Tên thương hiệu. Nếu không rõ, ghi 'Chưa xác định'", "product_name": "Tên Model. Nếu không rõ, ghi 'Chưa xác định'", "homepage_link": "Link trang web gốc của hãng (ví dụ: https://www.fendicasa.com) hoặc NONE", "designer": "Tên tác giả hoặc 'Chưa xác định'", "main_search_keyword": "TỪ KHÓA CHÍNH (TỐI ĐA 1 ĐẾN 4 TỪ). Nếu có Hãng+Model thì ghép lại. Nếu không có, CHỈ GHI loại đồ + chất liệu (vd: tiger print sofa). CẤM VIẾT CÂU DÀI.", "related_keywords": ["keyword 1", "keyword 2", "keyword 3"], "style": "...", "is_luxury": true, "score_total": 8.5, "form_score": 8, "proportion_score": 8, "color_score": 8, "detail_score": 8, "material_score": 8, "luxury_index": 8, "match_status": "GHI ĐÚNG 1 TRONG 2 CHỮ: 'EXACT' (tự tin 100%), hoặc 'GUESS' (suy đoán)", "aesthetic_analysis": "Góc nhìn của Master Curator (Chuyên gia quốc tế): Phân tích sâu sắc về ngôn ngữ thiết kế, tỷ lệ hình khối, vật liệu và sự vượt thời gian. Đưa ra lời khen xứng đáng cho sự tinh tế, nhưng cũng chỉ ra điểm hạn chế nếu có. Văn phong sang trọng, am hiểu (3-4 câu)."}`;
 
 function isApiKeyReady() {
     const geminiKey = localStorage.getItem('gemini_key');
@@ -458,7 +529,6 @@ async function startTextSearch() {
 
     try {
         const gemKey = localStorage.getItem('gemini_key') || "";
-        const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gemKey}`;
         const lt = getEl('loading-text');
         
         stepActive(1);
@@ -481,8 +551,10 @@ async function startTextSearch() {
         stepActive(3);
         if (lt) lt.innerText = 'AI đang phân tích...';
         const P = `Người dùng đang tìm kiếm món đồ nội thất bằng từ khóa: "${query}". NHIỆM VỤ: 1. Định danh chi tiết sản phẩm này. 2. BẮT BUỘC ĐIỀN match_status: 'GUESS' hoặc 'EXACT'. 3. NHẬP VAI KHẮT KHE: Bạn là một nhà phê bình thiết kế cực kỳ khó tính. Hãy hạ tiêu chuẩn điểm xuống, đồ nội thất thông thường chỉ xứng đáng 5-6 điểm. Dành mức điểm 8-10 cho những kiệt tác thực sự. Nhận xét phải thẳng thắn, soi xét khuyết điểm. TRẢ JSON: ${jsonSchema}`;
-        const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P}]}]}), signal });
-        let d3 = parseJSON(await r3.json()); d3._mode = 'text';
+        
+        // Gọi Fallback
+        const data3 = await executeAiWithFallback(gemKey, P, null, signal);
+        let d3 = parseJSON(data3); d3._mode = 'text';
         stepDone(3);
         render(d3);
     } catch(err) {
@@ -494,9 +566,11 @@ async function startTextSearch() {
     }
 }
 
+// Cập nhật hàm parseJSON để nhận trực tiếp data Object thay vì Fetch Response
 function parseJSON(r) { 
-    if(r.error) throw new Error("Lỗi Gemini API: " + (r.error.message || "Key không hợp lệ."));
-    if(!r.candidates || !r.candidates[0]) throw new Error("Lỗi xác thực. Vui lòng kiểm tra lại API Key Gemini.");
+    if(r.error) throw new Error("Lỗi API: " + (r.error.message || "Key không hợp lệ."));
+    if(r.promptFeedback && r.promptFeedback.blockReason) throw new Error("Bị chặn bởi bộ lọc an toàn: " + r.promptFeedback.blockReason);
+    if(!r.candidates || !r.candidates[0]) throw new Error("Lỗi xác thực: AI không trả về kết quả hợp lệ.");
     const cand = r.candidates[0];
     const t = cand.content.parts.map(p=>p.text).join(''); 
     const s = t.indexOf('{'), e = t.lastIndexOf('}');
@@ -586,8 +660,8 @@ async function analyseImage(b64){
   [1,2,3].forEach(stepReset);
   try {
     const gemKey = localStorage.getItem('gemini_key') || "";
-    const gemUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gemKey}`;
     let d3 = null;
+    
     if (currentMode === 'lens') {
         const lt = getEl('loading-text'); stepActive(1); if (lt) lt.innerText = 'Đang trích xuất hình ảnh...';
         const body = new URLSearchParams(); body.append('image', b64);
@@ -598,15 +672,20 @@ async function analyseImage(b64){
         const serpUrl = `https://serpapi.com/search.json?engine=google_lens&url=${encodeURIComponent(imgUrl)}&api_key=${serpKey}`;
         const data = await fetchSerpApi(serpUrl, signal);
         const lensMatches = data.visual_matches?.slice(0, 15).map(m => `- ${m.title} | Link: ${m.link}`).join('\n') || "Không có"; stepDone(2);
+        
         stepActive(3); if (lt) lt.innerText = 'AI đang thẩm định...';
-        const P3 = `Đọc dữ liệu Google Lens: """${lensMatches}""". NHIỆM VỤ: 1. ĐỊNH DANH: Trích xuất Tên Hãng và Model. 2. XÁC NHẬN: EXACT hoặc GUESS. 3. NHẬP VAI KHẮT KHE: Đánh giá tác phẩm với con mắt cực kỳ khó tính, chấm điểm thấp tay (trung bình 5-6), nhận xét soi mói khuyết điểm thiết kế. Trả JSON: ${jsonSchema}`;
-        const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P3},{inlineData:{mimeType:'image/jpeg',data:b64}}]}]}), signal });
-        d3 = parseJSON(await r3.json()); d3._mode = 'lens'; stepDone(3);
+        const P3 = `Đọc dữ liệu Google Lens: """${lensMatches}""". NHIỆM VỤ: 1. ĐỊNH DANH: Trích xuất Tên Hãng và Model. Nếu chỉ có text mà không có ảnh, hãy dựa vào text để đoán. 2. XÁC NHẬN: EXACT hoặc GUESS. 3. NHẬP VAI CHUYÊN GIA: Bạn là một Master Curator nội thất. Hãy chấm điểm (0-10) CÔNG TÂM và SÂU SẮC. Trả JSON: ${jsonSchema}`;
+        
+        // Gọi Fallback
+        const data3 = await executeAiWithFallback(gemKey, P3, b64, signal);
+        d3 = parseJSON(data3); d3._mode = 'lens'; stepDone(3);
     } else {
         stepActive(1); stepActive(2); stepActive(3); const lt = getEl('loading-text'); if (lt) lt.innerText = 'AI visual analysis...';
-        const P_Basic = `Chế độ cơ bản. CẤM BỊA TÊN. Đặt main_brand, product_name là 'Chưa xác định'. Đặt match_status="GUESS". NHẬP VAI KHẮT KHE: Điểm trung bình 5-6. Trả JSON: ${jsonSchema}`;
-        const r3 = await fetch(gemUrl, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({contents:[{role:'user',parts:[{text:P_Basic},{inlineData:{mimeType:'image/jpeg',data:b64}}]}]}), signal });
-        d3 = parseJSON(await r3.json()); d3._mode = 'guess'; stepDone(1); stepDone(2); stepDone(3);
+        const P_Basic = `Chế độ cơ bản. CẤM BỊA TÊN. Đặt main_brand, product_name là 'Chưa xác định'. Đặt match_status="GUESS". NHẬP VAI CHUYÊN GIA: Đánh giá công tâm dựa trên hình khối và vật liệu (nếu không có ảnh hãy đánh giá theo lý thuyết chung). Thiết kế bình thường 5-6 điểm, thiết kế xuất sắc 8-10 điểm. Trả JSON: ${jsonSchema}`;
+        
+        // Gọi Fallback
+        const data3 = await executeAiWithFallback(gemKey, P_Basic, b64, signal);
+        d3 = parseJSON(data3); d3._mode = 'guess'; stepDone(1); stepDone(2); stepDone(3);
     }
     render(d3);
   } catch(err) { 
@@ -680,7 +759,6 @@ async function fetchSuggestions(brand, type) {
     } catch (e) { brandList.innerHTML = typeList.innerHTML = '<p class="text-[9px] text-danger italic">Lỗi mạng.</p>'; }
 }
 
-// FIX TRÁNH LỖI NGOẶC VÀ NHÁY ĐƠN KHI VẼ HTML (BUG FIX)
 function renderSuggestRow(container, images) {
     if(!images || images.length === 0) { container.innerHTML = '<p class="text-[9px] text-metal italic px-4">Không có dữ liệu</p>'; return; }
     container.innerHTML = '';
@@ -694,7 +772,6 @@ function renderSuggestRow(container, images) {
         wrapper.className = "w-[140px] min-w-[140px] flex-shrink-0 cursor-pointer group snap-start";
         wrapper.onclick = () => analyzeFromSuggestUrl(item.original, safeTitle);
         
-        // BỔ SUNG BADGE CẢNH BÁO TỐN API KEY KHI RƠ CHUỘT
         wrapper.innerHTML = `
             <div class="w-full h-[140px] bg-dark rounded-xl overflow-hidden border border-border group-hover:border-gold/50 shadow-lg group-hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all duration-300 relative">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10 pointer-events-none"></div>
@@ -765,12 +842,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateKeyStatusDot();
     initTypewriter();
     
-    // Tự mở settings nếu lần đầu dùng (chưa có key Gemini)
     if (!localStorage.getItem('gemini_key')) {
         setTimeout(() => openSettings(), 800);
     }
     
-    // GẮN SỰ KIỆN LỖI ẢNH ĐỘNG ĐỂ KHÔNG BỊ REFERENCE ERROR (BUG FIX)
     const pImg = getEl('preview-image');
     if (pImg) {
         pImg.onerror = function() {
@@ -838,6 +913,9 @@ function resetSystem() {
     toggleHide('empty-state', false); toggleHide('loading-state', true); toggleHide('results-state', true); 
     toggleHide('ready-state', true); toggleHide('radar-card', true); toggleHide('suggestions-zone', true); 
     const f = getEl('file-upload'); if(f) f.value=''; currentImageB64=''; getEl('text-search-input').value = ''; 
+    // Xóa Badge model khi reset
+    const badge = document.getElementById('model-badge');
+    if (badge) badge.remove();
 }
 function resetAll() { location.reload(); }
 function openSettings() { const m = getEl('settings-modal'), b = getEl('settings-box'); getEl('cfg-imgbb').value = localStorage.getItem('imgbb_key') || ''; getEl('cfg-serp').value = localStorage.getItem('serp_key') || ''; getEl('cfg-gemini').value = localStorage.getItem('gemini_key') || ''; if(m) { m.classList.remove('hidden'); setTimeout(()=>{ m.classList.remove('opacity-0'); b?.classList.remove('scale-95'); },10); } }
@@ -846,13 +924,14 @@ function saveSettings() {
     const gemVal = getEl('cfg-gemini')?.value.trim() || '';
     const imgVal = getEl('cfg-imgbb')?.value.trim() || '';
     const serpVal = getEl('cfg-serp')?.value.trim() || '';
+    
     localStorage.setItem('imgbb_key', imgVal); 
     localStorage.setItem('serp_key', serpVal); 
     localStorage.setItem('gemini_key', gemVal); 
     updateKeyStatusDot();
     closeSettings(); 
     if (!gemVal) { showToast('⚠ Chưa nhập Gemini Key!', true); }
-    else { showToast('✓ Đã lưu cấu hình API Keys'); }
+    else { showToast('✓ Đã lưu cấu hình API'); }
 }
 </script>
 </body>
